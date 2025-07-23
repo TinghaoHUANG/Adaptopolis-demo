@@ -1,0 +1,68 @@
+[gd_scene load_steps=2 format=3 uid="uid://b2qsoyd6aw33g"]
+
+[ext_resource type="Script" uid="uid://br1kylpbpx5t8" path="res://scripts/Game.gd" id="1_glv2v"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_glv2v")
+
+[node name="StatusPanel" type="MarginContainer" parent="."]
+layout_mode = 0
+
+[node name="StatusLabel" type="Label" parent="StatusPanel"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+text = "Status"
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.3
+anchor_top = 0.2
+anchor_right = 0.7
+anchor_bottom = 0.8
+offset_left = 23.0
+offset_top = 216.0
+offset_right = 123.0
+offset_bottom = 295.0
+
+[node name="RainLabel" type="Label" parent="VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Rain Info"
+
+[node name="CardVBox" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Node2D" type="Node2D" parent="."]
+
+[node name="Camera2D" type="Camera2D" parent="Node2D"]
+anchor_mode = 0
+zoom = Vector2(1.39, 1.39)
+
+[node name="StatusBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 648.0
+offset_right = 724.0
+offset_bottom = 23.0
+grow_horizontal = 0
+
+[node name="GreenLabel" type="Label" parent="StatusBar"]
+layout_mode = 2
+text = "🌳 0"
+
+[node name="GreyLabel" type="Label" parent="StatusBar"]
+layout_mode = 2
+text = "🧱 0"
+
+[node name="NextRoundButton" type="Button" parent="."]
+layout_mode = 2
+offset_left = 645.0
+offset_top = 385.0
+offset_right = 745.0
+offset_bottom = 416.0
+text = "Next Round"
