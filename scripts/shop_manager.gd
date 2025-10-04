@@ -22,7 +22,7 @@ signal facility_purchased(facility: Facility)
 var library: FacilityLibrary = null
 var city_state: CityState = null
 var current_offers: Array[Facility] = []
-var rng := RandomNumberGenerator.new()
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
     rng.randomize()
@@ -38,8 +38,8 @@ func refresh_offers() -> Array[Facility]:
     if library == null:
         push_warning("ShopManager requires a FacilityLibrary")
         return current_offers
-    for i in offer_size:
-        var facility := library.get_random_facility(rng)
+    for i: int in range(offer_size):
+        var facility: Facility = library.get_random_facility(rng)
         if facility:
             current_offers.append(facility)
     emit_signal("offers_changed", current_offers.duplicate())
@@ -55,7 +55,7 @@ func purchase_offer(index: int, grid_manager: GridManager, origin: Vector2i) -> 
     if city_state == null:
         emit_signal("purchase_failed", "City state unavailable")
         return false
-    var facility := current_offers[index].clone()
+    var facility: Facility = current_offers[index].clone()
     if not city_state.can_afford(facility.cost):
         emit_signal("purchase_failed", "Insufficient funds")
         return false
@@ -63,7 +63,7 @@ func purchase_offer(index: int, grid_manager: GridManager, origin: Vector2i) -> 
         emit_signal("purchase_failed", "Invalid placement")
         return false
     city_state.spend_money(facility.cost)
-    var placed := grid_manager.place_facility(facility, origin)
+    var placed: bool = grid_manager.place_facility(facility, origin)
     if not placed:
         # Refund if placement failed after spending money.
         city_state.money += facility.cost
@@ -80,3 +80,4 @@ func skip_offer(index: int) -> bool:
     current_offers.remove_at(index)
     emit_signal("offers_changed", current_offers.duplicate())
     return true
+

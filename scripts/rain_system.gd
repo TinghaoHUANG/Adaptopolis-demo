@@ -14,27 +14,27 @@ const CityState = preload("res://scripts/city_state.gd")
 @export var base_max: int = 10
 @export var per_round_increase: int = 2
 
-var rng := RandomNumberGenerator.new()
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var last_intensity: int = 0
 
 func _ready() -> void:
-    rng.randomize()
+	rng.randomize()
 
 func seed(value: int) -> void:
-    rng.seed = value
+	rng.seed = value
 
 func calculate_intensity(round_number: int) -> int:
-    var base := rng.randi_range(base_min, base_max)
-    last_intensity = base + round_number * per_round_increase
-    return last_intensity
+	var base: int = rng.randi_range(base_min, base_max)
+	last_intensity = base + round_number * per_round_increase
+	return last_intensity
 
 func simulate_round(city: CityState) -> Dictionary:
-    var intensity := calculate_intensity(city.round_number)
-    var total_defense := city.get_total_resilience()
-    var damage := max(intensity - total_defense, 0)
-    city.apply_damage(damage)
-    return {
-        "intensity": intensity,
-        "defense": total_defense,
-        "damage": damage
-    }
+	var intensity: int = calculate_intensity(city.round_number)
+	var total_defense: int = city.get_total_resilience()
+	var damage: int = max(intensity - total_defense, 0)
+	city.apply_damage(damage)
+	return {
+		"intensity": intensity,
+		"defense": total_defense,
+		"damage": damage
+	}

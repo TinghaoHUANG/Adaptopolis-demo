@@ -19,7 +19,7 @@ extends Resource
 @export var special_rule: String = ""
 
 func clone() -> Facility:
-    var copy := Facility.new()
+    var copy: Facility = Facility.new()
     copy.id = id
     copy.name = name
     copy.type = type
@@ -32,7 +32,7 @@ func clone() -> Facility:
     return copy
 
 static func from_dict(data: Dictionary) -> Facility:
-    var facility := Facility.new()
+    var facility: Facility = Facility.new()
     facility.id = data.get("id", "")
     facility.name = data.get("name", "")
     facility.type = data.get("type", "")
@@ -59,9 +59,9 @@ func to_dict() -> Dictionary:
 
 func get_footprint() -> Array[Vector2i]:
     var footprint: Array[Vector2i] = []
-    for y in shape.size():
-        var row = shape[y]
-        for x in row.size():
+    for y: int in range(shape.size()):
+        var row: Array = shape[y]
+        for x: int in range(row.size()):
             if row[x]:
                 footprint.append(Vector2i(x, y))
     return footprint
@@ -79,3 +79,4 @@ func _clone_shape(source: Array) -> Array:
     for row in source:
         clone.append(row.duplicate())
     return clone
+

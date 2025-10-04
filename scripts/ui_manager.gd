@@ -29,33 +29,33 @@ func set_city_state(state: CityState) -> void:
 func _on_stats_changed() -> void:
     if city_state == null:
         return
-    var stats := city_state.get_snapshot()
+    var stats: Dictionary = city_state.get_snapshot()
     update_round(stats["round"])
     update_health(stats["health"], city_state.max_health)
     update_money(stats["money"])
 
 func update_round(round_number: int) -> void:
-    var label := _get_label(round_label_path)
+    var label: Label = _get_label(round_label_path)
     if label:
         label.text = "%s %d" % [tr("ROUND_START"), round_number]
 
 func update_health(health: int, max_health: int) -> void:
-    var label := _get_label(health_label_path)
+    var label: Label = _get_label(health_label_path)
     if label:
         label.text = "%d / %d" % [health, max_health]
 
 func update_money(money: int) -> void:
-    var label := _get_label(money_label_path)
+    var label: Label = _get_label(money_label_path)
     if label:
         label.text = "%s %d" % [tr("BUY_FACILITY"), money]
 
 func show_rain_report(report: Dictionary) -> void:
-    var hud := _get_node(hud_path)
+    var hud: Node = _get_node(hud_path)
     if hud and hud.has_method("display_rain_report"):
         hud.call("display_rain_report", report)
 
-func _get_label(path: NodePath):
-    var node := _get_node(path)
+func _get_label(path: NodePath) -> Label:
+    var node: Node = _get_node(path)
     if node and node is Label:
         return node
     return null
@@ -64,3 +64,4 @@ func _get_node(path: NodePath) -> Node:
     if path.is_empty():
         return null
     return get_node_or_null(path)
+

@@ -20,14 +20,14 @@ func load_locale(locale_code: String, path: String) -> void:
     if not FileAccess.file_exists(path):
         push_warning("Missing locale file: %s" % path)
         return
-    var translation := Translation.new()
+    var translation: Translation = Translation.new()
     translation.locale = locale_code
-    var file := FileAccess.open(path, FileAccess.READ)
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
     while not file.eof_reached():
-        var line := file.get_line().strip_edges()
+        var line: String = file.get_line().strip_edges()
         if line.is_empty():
             continue
-        var parts := line.split(",", false, 2)
+        var parts: Array = line.split(",", false, 2)
         if parts.size() < 2:
             continue
         translation.add_message(parts[0], parts[1])
@@ -53,3 +53,4 @@ func ensure_loaded(locales: Dictionary) -> void:
         if loaded_locales.has(code):
             continue
         load_locale(code, locales[code])
+

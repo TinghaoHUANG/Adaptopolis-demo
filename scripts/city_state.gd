@@ -25,64 +25,65 @@ var last_damage: int = 0
 var facilities: Array[Facility] = []
 
 func reset() -> void:
-    health = max_health
-    money = starting_money
-    round_number = 1
-    last_damage = 0
-    facilities.clear()
-    emit_signal("stats_changed")
+	health = max_health
+	money = starting_money
+	round_number = 1
+	last_damage = 0
+	facilities.clear()
+	emit_signal("stats_changed")
 
 func register_facility(facility: Facility) -> void:
-    facilities.append(facility)
-    emit_signal("facility_registered", facility)
-    emit_signal("stats_changed")
+	facilities.append(facility)
+	emit_signal("facility_registered", facility)
+	emit_signal("stats_changed")
 
 func unregister_facility(facility: Facility) -> void:
-    if facilities.erase(facility):
-        emit_signal("facility_unregistered", facility)
-        emit_signal("stats_changed")
+	if facilities.has(facility):
+		facilities.erase(facility)
+		emit_signal("facility_unregistered", facility)
+		emit_signal("stats_changed")
 
 func get_total_resilience() -> int:
-    var total := 0
-    for facility in facilities:
-        total += facility.resilience
-    return total
+	var total: int = 0
+	for facility in facilities:
+		total += facility.resilience
+	return total
 
 func apply_damage(amount: int) -> void:
-    last_damage = max(amount, 0)
-    if last_damage == 0:
-        return
-    health = max(health - last_damage, 0)
-    emit_signal("stats_changed")
+	last_damage = max(amount, 0)
+	if last_damage == 0:
+		return
+	health = max(health - last_damage, 0)
+	emit_signal("stats_changed")
 
 func add_income() -> int:
-    var income := max(base_income - last_damage, 0)
-    money += income
-    emit_signal("stats_changed")
-    return income
+	var income: int = max(base_income - last_damage, 0)
+	money += income
+	emit_signal("stats_changed")
+	return income
 
 func can_afford(cost: int) -> bool:
-    return cost <= money
+	return cost <= money
 
 func spend_money(cost: int) -> bool:
-    if cost > money:
-        return false
-    money -= cost
-    emit_signal("stats_changed")
-    return true
+	if cost > money:
+		return false
+	money -= cost
+	emit_signal("stats_changed")
+	return true
 
 func advance_round() -> void:
-    round_number += 1
-    last_damage = 0
-    emit_signal("stats_changed")
+	round_number += 1
+	last_damage = 0
+	emit_signal("stats_changed")
 
 func is_game_over() -> bool:
-    return health <= 0
+	return health <= 0
 
 func get_snapshot() -> Dictionary:
-    return {
-        "health": health,
-        "money": money,
-        "round": round_number,
-        "last_damage": last_damage
-    }
+	return {
+		"health": health,
+		"money": money,
+		"round": round_number,
+		"last_damage": last_damage
+	}

@@ -19,10 +19,10 @@ func load_from_json(path: String) -> void:
     if not FileAccess.file_exists(path):
         push_warning("Facility data not found: %s" % path)
         return
-    var file := FileAccess.open(path, FileAccess.READ)
-    var raw := file.get_as_text()
+    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+    var raw: String = file.get_as_text()
     file.close()
-    var parsed = JSON.parse_string(raw)
+    var parsed: Variant = JSON.parse_string(raw)
     if typeof(parsed) != TYPE_ARRAY:
         push_warning("Facility data must be an array: %s" % path)
         return
@@ -62,3 +62,4 @@ func get_all_ids() -> Array[String]:
         result.append(id)
     result.sort()
     return result
+

@@ -15,7 +15,7 @@ const FacilityLibrary = preload("res://scripts/facility_library.gd")
 @export var save_path: String = "user://savegame.json"
 
 func save_game(city_state: CityState, grid_manager: GridManager) -> bool:
-    var data := {
+    var data: Dictionary = {
         "city": city_state.get_snapshot(),
         "grid": grid_manager.serialize_state(),
         "buildings": _vectors_to_raw(grid_manager.get_building_positions())
@@ -25,10 +25,10 @@ func save_game(city_state: CityState, grid_manager: GridManager) -> bool:
 func load_game(city_state: CityState, grid_manager: GridManager, library: FacilityLibrary) -> bool:
     if not FileAccess.file_exists(save_path):
         return false
-    var file := FileAccess.open(save_path, FileAccess.READ)
-    var raw := file.get_as_text()
+    var file: FileAccess = FileAccess.open(save_path, FileAccess.READ)
+    var raw: String = file.get_as_text()
     file.close()
-    var parsed = JSON.parse_string(raw)
+    var parsed: Variant = JSON.parse_string(raw)
     if typeof(parsed) != TYPE_DICTIONARY:
         push_warning("Invalid save format")
         return false
@@ -40,7 +40,7 @@ func load_game(city_state: CityState, grid_manager: GridManager, library: Facili
     city_state.last_damage = city_data.get("last_damage", 0)
     city_state.emit_signal("stats_changed")
     var buildings_raw: Array = parsed.get("buildings", [])
-    var building_positions := _raw_to_vectors(buildings_raw)
+    var building_positions: Array[Vector2i] = _raw_to_vectors(buildings_raw)
     var grid_data: Array = parsed.get("grid", [])
     grid_manager.load_state(grid_data, library, building_positions)
     return true
@@ -50,7 +50,7 @@ func delete_save() -> void:
         DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 
 func _write_json(path: String, data) -> bool:
-    var file := FileAccess.open(path, FileAccess.WRITE)
+    var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
     if file == null:
         push_warning("Unable to open save path: %s" % path)
         return false
@@ -70,3 +70,4 @@ func _raw_to_vectors(raw: Array) -> Array[Vector2i]:
         if typeof(entry) == TYPE_ARRAY and entry.size() >= 2:
             vectors.append(Vector2i(entry[0], entry[1]))
     return vectors
+

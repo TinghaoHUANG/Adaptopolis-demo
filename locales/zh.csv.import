@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://b28k06pq5j7ex"
+
+[deps]
+
+files=["res://locales/zh.回合开始.translation"]
+
+source_file="res://locales/zh.csv"
+dest_files=["res://locales/zh.回合开始.translation"]
+
+[params]
+
+compress=true
+delimiter=0
