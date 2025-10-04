@@ -1,0 +1,38 @@
+[
+  {
+    "id": "rain_garden",
+    "name": "Rain Garden",
+    "type": "green",
+    "cost": 5,
+    "resilience": 2,
+    "shape": [[true, true]],
+    "description": "Absorbs stormwater and reduces runoff."
+  },
+  {
+    "id": "flood_wall",
+    "name": "Flood Wall",
+    "type": "grey",
+    "cost": 12,
+    "resilience": 5,
+    "shape": [[true, true, true]],
+    "description": "A strong but expensive flood defense."
+  },
+  {
+    "id": "green_roof",
+    "name": "Green Roof",
+    "type": "green",
+    "cost": 6,
+    "resilience": 2,
+    "shape": [[true]],
+    "special_rule": "Can be placed on building tiles."
+  },
+  {
+    "id": "retention_pond",
+    "name": "Retention Pond",
+    "type": "green",
+    "cost": 10,
+    "resilience": 4,
+    "shape": [[true, true], [true, true]],
+    "description": "Stores excess rainfall to prevent flooding."
+  }
+]
