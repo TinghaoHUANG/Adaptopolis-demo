@@ -1,50 +1,37 @@
 # Adaptopolis
 
-Adaptopolis is a rogue-like city management game where you play as the mayor, defending your city from relentless rain and flooding. Your goal is to build resilient infrastructure, manage your city's health and finances, and survive as many rounds as possible against increasingly severe weather.
+Adaptopolis is a grid-based, roguelike city-building prototype built with Godot 4. Players steward a flood-prone city by purchasing and placing adaptive infrastructure on a constrained 6×8 grid while rainfall intensity escalates every round.
 
-## Game Overview
-- **Role:** Mayor of a city under constant threat from rain and flooding.
-- **Objective:** Keep your city's health above zero by building infrastructure and managing resources.
-- **Game Over:** The game ends when your city's health drops below zero.
+## Project Layout
 
-## Gameplay Mechanics
+- `scripts/` – Core gameplay scripts (grid, facilities, rain, shop, localization, save/load, UI wiring).
+- `data/facility_data.json` – Facility catalog used by the shop and placement systems.
+- `locales/` – CSV localization tables for English (`en.csv`) and Chinese (`zh.csv`).
+- `docs/` – Design references including the condensed Godot document and full game design document.
+- `scenes/` – Placeholder subdirectories for future scene assets (`ui/`, `tiles/`, `effects/`).
 
-### City Health & Rain Attacks
-- The city starts with a set amount of health (completeness).
-- Each round, a rain attack inflicts flood damage, reducing city health.
-- If health falls below zero, the game ends.
+## Core Systems
 
-### Income System
-- After each rain attack, the city receives income.
-- No damage: maximum income.
-- Low damage: slightly reduced income.
-- High damage: income decreases further.
-- The more damage the city takes, the less income it receives in the next round.
+- **Grid Manager** (`scripts/grid_manager.gd`): Manages the 6×8 board, building obstacles, placement validation, and automatic merging of identical adjacent facilities.
+- **City State** (`scripts/city_state.gd`): Tracks health, funds, income, and facility registry.
+- **Rain System** (`scripts/rain_system.gd`): Escalates rainfall each round and applies damage against the city’s total resilience.
+- **Shop Manager** (`scripts/shop_manager.gd`): Generates random facility offers, validates purchases, and hands off placement.
+- **Save Manager** (`scripts/save_manager.gd`): Serializes the grid, building layout, and city snapshot to `user://savegame.json`.
+- **Localization Manager** (`scripts/localization.gd`): Loads CSV translations and switches locales through `TranslationServer`.
+- **Main Entry** (`scripts/main.gd`): Wires the managers together, refreshes offers, and runs the round loop hooks.
 
-### Infrastructure Cards
-- Between rounds, you are dealt 3 random infrastructure cards.
-- **Card Types:**
-  - **Grey Infrastructure:** e.g., Drainage upgrades, dike expansions.
-  - **Green Infrastructure:** e.g., Rain gardens, bioswales, retention ponds.
-- Each card has a resilience value (defense) and a cost.
-- Cards can be purchased using your city's income.
-- You can buy multiple cards per round if you can afford them.
-- Built infrastructure increases your city's resilience, reducing future damage.
+## Getting Started
 
-### Increasing Challenge
-- Rain attacks become stronger as rounds progress, requiring you to continually upgrade your city's defenses.
+1. Install [Godot 4.2+](https://godotengine.org/).
+2. Open the `adaptopolis` folder as a Godot project.
+3. Ensure `data/facility_data.json` and `locales/*.csv` remain in place—they are loaded at runtime.
+4. Run the main scene (to be authored) or attach `scripts/main.gd` to a root node for testing the logic flow.
 
-## Modularity & Extensibility
-- The game is designed for easy expansion:
-  - The card pool is separated into its own file for easy modification and future card combinations or effects.
-  - Game logic is organized into separate scripts for clarity and maintainability.
+## Design References
 
-## How to Play
-1. Start the game and review your city's status.
-2. After each rain attack, choose which infrastructure cards to build.
-3. Balance your spending to maximize resilience and income.
-4. Survive as many rounds as possible!
+- `docs/Adaptopolis_Godot_Document.md` – Implementation-focused overview of systems and directives.
+- `docs/Adaptopolis_GDD.md` – Full game design document used for balancing and future feature planning.
 
----
+## Versioning
 
-*This project is open for contributions and ideas! Feel free to suggest new cards, mechanics, or improvements.* 
+Current documentation version: **0.2**. Future updates should align both docs and this README with version increments.
