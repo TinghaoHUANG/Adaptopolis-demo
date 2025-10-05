@@ -8,9 +8,6 @@
 class_name SaveManager
 extends Node
 
-const CityState = preload("res://scripts/city_state.gd")
-const GridManager = preload("res://scripts/grid_manager.gd")
-const FacilityLibrary = preload("res://scripts/facility_library.gd")
 
 @export var save_path: String = "user://savegame.json"
 
@@ -70,4 +67,5 @@ func _raw_to_vectors(raw: Array) -> Array[Vector2i]:
         if typeof(entry) == TYPE_ARRAY and entry.size() >= 2:
             vectors.append(Vector2i(entry[0], entry[1]))
     return vectors
+
 

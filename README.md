@@ -1,6 +1,6 @@
 # Adaptopolis
 
-Adaptopolis is a grid-based, roguelike city-building prototype built with Godot 4. Players steward a flood-prone city by purchasing and placing adaptive infrastructure on a constrained 6×8 grid while rainfall intensity escalates every round.
+Adaptopolis is a grid-based, roguelike city-building prototype built with Godot 4. Players steward a flood-prone city by purchasing and placing adaptive infrastructure on a constrained 6×6 grid while rainfall intensity escalates every round.
 
 ## Project Layout
 
@@ -12,7 +12,7 @@ Adaptopolis is a grid-based, roguelike city-building prototype built with Godot 
 
 ## Core Systems
 
-- **Grid Manager** (`scripts/grid_manager.gd`): Manages the 6×8 board, building obstacles, placement validation, and automatic merging of identical adjacent facilities.
+- **Grid Manager** (`scripts/grid_manager.gd`): Manages the 6×6 board, building obstacles, placement validation, and automatic merging of identical adjacent facilities.
 - **City State** (`scripts/city_state.gd`): Tracks health, funds, income, and facility registry.
 - **Rain System** (`scripts/rain_system.gd`): Escalates rainfall each round and applies damage against the city’s total resilience.
 - **Shop Manager** (`scripts/shop_manager.gd`): Generates random facility offers, validates purchases, and hands off placement.
@@ -34,4 +34,4 @@ Adaptopolis is a grid-based, roguelike city-building prototype built with Godot 
 
 ## Versioning
 
-Current documentation version: **0.2**. Future updates should align both docs and this README with version increments.
+Current documentation version: **0.2.2**. Future updates should align both docs and this README with version increments.

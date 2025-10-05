@@ -1,12 +1,18 @@
-[gd_scene load_steps=4 format=3 uid="uid://bu4u6yl2516gu"]
+[gd_scene load_steps=6 format=3 uid="uid://bu4u6yl2516gu"]
 
 [ext_resource type="Script" uid="uid://bm2gb3olffh6w" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" uid="uid://b27vm1jwb1mby" path="res://scripts/ui_manager.gd" id="2"]
 [ext_resource type="Script" uid="uid://cmme2bgybqrv5" path="res://scripts/hud_display.gd" id="3"]
+[ext_resource type="Script" uid="uid://2n5fjvlgj26w" path="res://scripts/grid_display.gd" id="4"]
+[ext_resource type="Script" uid="uid://uly2nmjawuly" path="res://scripts/shop_display.gd" id="5"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1")
 ui_manager_path = NodePath("UI/UIManager")
+next_round_button_path = NodePath("UI/HUD/NextRoundButton")
+grid_display_path = NodePath("UI/GridDisplay")
+shop_display_path = NodePath("UI/ShopPanel")
+status_label_path = NodePath("UI/HUD/StatusLabel")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -15,15 +21,15 @@ layout_mode = 3
 anchors_preset = 0
 offset_left = 24.0
 offset_top = 24.0
-offset_right = 264.0
-offset_bottom = 244.0
+offset_right = 304.0
+offset_bottom = 324.0
 script = ExtResource("3")
 rain_report_label_path = NodePath("RainPanel/RainReportLabel")
 
 [node name="StatsContainer" type="VBoxContainer" parent="UI/HUD"]
 layout_mode = 0
-offset_right = 216.0
-offset_bottom = 90.0
+offset_right = 256.0
+offset_bottom = 128.0
 
 [node name="RoundLabel" type="Label" parent="UI/HUD/StatsContainer"]
 layout_mode = 2
@@ -35,13 +41,17 @@ text = "Health: 20/20"
 
 [node name="MoneyLabel" type="Label" parent="UI/HUD/StatsContainer"]
 layout_mode = 2
-text = "Funds: 15"
+text = "Funds: 30"
+
+[node name="DefenseLabel" type="Label" parent="UI/HUD/StatsContainer"]
+layout_mode = 2
+text = "Defense: 0"
 
 [node name="RainPanel" type="Panel" parent="UI/HUD"]
 layout_mode = 0
-offset_top = 100.0
-offset_right = 216.0
-offset_bottom = 200.0
+offset_top = 136.0
+offset_right = 256.0
+offset_bottom = 236.0
 
 [node name="RainTitle" type="Label" parent="UI/HUD/RainPanel"]
 layout_mode = 0
@@ -54,18 +64,95 @@ text = "Rain Report"
 [node name="RainReportLabel" type="Label" parent="UI/HUD/RainPanel"]
 layout_mode = 0
 anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 8.0
 offset_top = 32.0
 offset_right = -8.0
-text = "Rain: 0
-Defense: 0
-Damage: 0"
+offset_bottom = -8.0
+text = "Next Rain: ?\nRain: 0\nDefense: 0\nDamage: 0"
 
-[node name="Instructions" type="Label" parent="UI/HUD"]
+[node name="NextRoundButton" type="Button" parent="UI/HUD"]
 layout_mode = 0
 anchor_right = 1.0
-offset_top = 212.0
-text = "Use Godot editor to add gameplay visuals."
+offset_top = 244.0
+offset_bottom = 280.0
+text = "Next Round"
+
+[node name="StatusLabel" type="Label" parent="UI/HUD"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 288.0
+text = "Welcome to Adaptopolis!"
+autowrap_mode = 2
+
+[node name="GridDisplay" type="GridContainer" parent="UI"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -192.0
+offset_top = -192.0
+offset_right = 192.0
+offset_bottom = 192.0
+script = ExtResource("4")
+columns = 6
+grid_rows = 6
+
+[node name="ShopPanel" type="PanelContainer" parent="UI"]
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -220.0
+offset_right = -24.0
+offset_bottom = 220.0
+script = ExtResource("5")
+offers_container_path = NodePath("MarginContainer/VBox/OfferList")
+detail_label_path = NodePath("MarginContainer/VBox/DetailLabel")
+skip_button_path = NodePath("MarginContainer/VBox/Controls/SkipButton")
+refresh_button_path = NodePath("MarginContainer/VBox/Controls/RefreshButton")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/ShopPanel"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="UI/ShopPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ShopTitle" type="Label" parent="UI/ShopPanel/MarginContainer/VBox"]
+layout_mode = 2
+text = "🛒 Shop"
+autowrap_mode = 2
+
+[node name="OfferList" type="VBoxContainer" parent="UI/ShopPanel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DetailLabel" type="Label" parent="UI/ShopPanel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+text = "Select a facility, then click the grid to place it."
+autowrap_mode = 2
+
+[node name="Controls" type="HBoxContainer" parent="UI/ShopPanel/MarginContainer/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SkipButton" type="Button" parent="UI/ShopPanel/MarginContainer/VBox/Controls"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Skip"
+
+[node name="RefreshButton" type="Button" parent="UI/ShopPanel/MarginContainer/VBox/Controls"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Refresh"
 
 [node name="UIManager" type="Node" parent="UI"]
 script = ExtResource("2")
@@ -73,3 +160,4 @@ hud_path = NodePath("../HUD")
 round_label_path = NodePath("../HUD/StatsContainer/RoundLabel")
 health_label_path = NodePath("../HUD/StatsContainer/HealthLabel")
 money_label_path = NodePath("../HUD/StatsContainer/MoneyLabel")
+defense_label_path = NodePath("../HUD/StatsContainer/DefenseLabel")

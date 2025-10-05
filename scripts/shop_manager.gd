@@ -8,10 +8,6 @@
 class_name ShopManager
 extends Node
 
-const FacilityLibrary = preload("res://scripts/facility_library.gd")
-const GridManager = preload("res://scripts/grid_manager.gd")
-const CityState = preload("res://scripts/city_state.gd")
-const Facility = preload("res://scripts/facility.gd")
 
 signal offers_changed(offers: Array)
 signal purchase_failed(reason: String)
@@ -80,4 +76,5 @@ func skip_offer(index: int) -> bool:
     current_offers.remove_at(index)
     emit_signal("offers_changed", current_offers.duplicate())
     return true
+
 

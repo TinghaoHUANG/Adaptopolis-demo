@@ -8,15 +8,15 @@
 class_name CityState
 extends Node
 
-const Facility = preload("res://scripts/facility.gd")
 
 signal stats_changed
 signal facility_registered(facility: Facility)
 signal facility_unregistered(facility: Facility)
 
 @export var max_health: int = 20
-@export var starting_money: int = 15
+@export var starting_money: int = 30
 @export var base_income: int = 6
+@export var perfect_round_bonus: int = 3
 
 var health: int = max_health
 var money: int = starting_money
@@ -57,7 +57,9 @@ func apply_damage(amount: int) -> void:
 	emit_signal("stats_changed")
 
 func add_income() -> int:
-	var income: int = max(base_income - last_damage, 0)
+	var income: int = base_income
+	if last_damage == 0:
+		income = base_income + perfect_round_bonus
 	money += income
 	emit_signal("stats_changed")
 	return income
@@ -87,3 +89,10 @@ func get_snapshot() -> Dictionary:
 		"round": round_number,
 		"last_damage": last_damage
 	}
+
+
+
+
+
+
+

@@ -8,7 +8,6 @@
 class_name FacilityLibrary
 extends Node
 
-const Facility = preload("res://scripts/facility.gd")
 
 var facility_templates: Dictionary = {}
 var data_path: String = ""
@@ -62,4 +61,5 @@ func get_all_ids() -> Array[String]:
         result.append(id)
     result.sort()
     return result
+
 

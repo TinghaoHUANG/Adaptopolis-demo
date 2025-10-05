@@ -8,16 +8,13 @@
 class_name GridManager
 extends Node
 
-const Facility = preload("res://scripts/facility.gd")
-const CityState = preload("res://scripts/city_state.gd")
-const FacilityLibrary = preload("res://scripts/facility_library.gd")
 
 signal facility_placed(facility: Facility, origin: Vector2i)
 signal facility_removed(facility: Facility)
 signal facility_merged(facility: Facility, absorbed: Facility)
 
 const GRID_WIDTH := 6
-const GRID_HEIGHT := 8
+const GRID_HEIGHT := 6
 
 class GridCell:
 	var position: Vector2i
@@ -40,10 +37,10 @@ func _ready() -> void:
 func set_city_state(state: CityState) -> void:
 	city_state = state
 
-func initialize(seed: int = 0) -> void:
+func initialize(seed_value: int = 0) -> void:
 	rng = RandomNumberGenerator.new()
-	if seed != 0:
-		rng.seed = seed
+	if seed_value != 0:
+		rng.seed = seed_value
 	else:
 		rng.randomize()
 	clear()
@@ -112,19 +109,8 @@ func can_place_facility(facility: Facility, origin: Vector2i) -> bool:
 func place_facility(facility: Facility, origin: Vector2i) -> bool:
 	if not can_place_facility(facility, origin):
 		return false
-	var footprint: Array[Vector2i] = facility.get_footprint()
-	var occupied_positions: Array[Vector2i] = []
-	for offset in footprint:
-		var target: Vector2i = origin + offset
-		var cell: GridCell = get_cell(target)
-		cell.occupied = true
-		cell.facility_ref = facility
-		if cell.is_building and facility.id == "green_roof":
-			# Building remains flagged but is now capped by the facility.
-			pass
-		occupied_positions.append(target)
-	facility_cells[facility] = occupied_positions
 	facility_origins[facility] = origin
+	_set_facility_footprint(facility)
 	if city_state:
 		city_state.register_facility(facility)
 	emit_signal("facility_placed", facility, origin)
@@ -140,19 +126,11 @@ func _resolve_merges(facility: Facility) -> void:
 			continue
 		if neighbor.level != facility.level:
 			continue
-		var absorbed_cells: Array[Vector2i] = (facility_cells.get(neighbor, []) as Array[Vector2i]).duplicate()
 		remove_facility(neighbor)
 		facility.merge_with(neighbor)
-		if not facility_cells.has(facility):
-			facility_cells[facility] = []
-		for pos in absorbed_cells:
-			var cell: GridCell = get_cell(pos)
-			if cell == null:
-				continue
-			cell.occupied = true
-			cell.facility_ref = facility
-			if not facility_cells[facility].has(pos):
-				facility_cells[facility].append(pos)
+		_set_facility_footprint(facility)
+		if city_state:
+			city_state.emit_signal("stats_changed")
 		emit_signal("facility_merged", facility, neighbor)
 
 func remove_facility(facility: Facility) -> void:
@@ -262,3 +240,24 @@ func _to_vector2i(value) -> Vector2i:
 	if typeof(value) == TYPE_ARRAY and value.size() >= 2:
 		return Vector2i(value[0], value[1])
 	return Vector2i.ZERO
+
+
+
+func _set_facility_footprint(facility: Facility) -> void:
+	if facility == null:
+		return
+	var origin: Vector2i = facility_origins.get(facility, Vector2i.ZERO)
+	var footprint: Array[Vector2i] = facility.get_footprint()
+	facility_cells[facility] = []
+	for offset in footprint:
+		var pos: Vector2i = origin + offset
+		var cell: GridCell = get_cell(pos)
+		if cell == null:
+			continue
+		cell.occupied = true
+		cell.facility_ref = facility
+		facility_cells[facility].append(pos)
+
+
+
+

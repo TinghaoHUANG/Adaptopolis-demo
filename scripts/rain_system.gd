@@ -8,11 +8,14 @@
 class_name RainSystem
 extends Node
 
-const CityState = preload("res://scripts/city_state.gd")
 
 @export var base_min: int = 5
 @export var base_max: int = 10
 @export var per_round_increase: int = 2
+
+var has_cached_forecast: bool = false
+var cached_intensity: int = 0
+var cached_round: int = 0
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var last_intensity: int = 0
@@ -25,11 +28,16 @@ func seed(value: int) -> void:
 
 func calculate_intensity(round_number: int) -> int:
 	var base: int = rng.randi_range(base_min, base_max)
-	last_intensity = base + round_number * per_round_increase
-	return last_intensity
+	return base + round_number * per_round_increase
 
 func simulate_round(city: CityState) -> Dictionary:
-	var intensity: int = calculate_intensity(city.round_number)
+	var intensity: int
+	if has_cached_forecast and cached_round == city.round_number:
+		intensity = cached_intensity
+		has_cached_forecast = false
+	else:
+		intensity = calculate_intensity(city.round_number)
+	last_intensity = intensity
 	var total_defense: int = city.get_total_resilience()
 	var damage: int = max(intensity - total_defense, 0)
 	city.apply_damage(damage)
@@ -38,3 +46,19 @@ func simulate_round(city: CityState) -> Dictionary:
 		"defense": total_defense,
 		"damage": damage
 	}
+
+
+
+func prepare_forecast(round_number: int) -> int:
+	if has_cached_forecast and cached_round == round_number:
+		return cached_intensity
+	cached_intensity = calculate_intensity(round_number)
+	cached_round = round_number
+	has_cached_forecast = true
+	last_intensity = cached_intensity
+	return cached_intensity
+
+func get_forecast() -> int:
+	return cached_intensity if has_cached_forecast else 0
+
+
