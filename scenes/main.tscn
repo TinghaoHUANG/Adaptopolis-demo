@@ -13,6 +13,15 @@ next_round_button_path = NodePath("UI/HUD/NextRoundButton")
 grid_display_path = NodePath("UI/GridDisplay")
 shop_display_path = NodePath("UI/ShopPanel")
 status_label_path = NodePath("UI/HUD/StatusLabel")
+start_menu_path = NodePath("UI/StartMenu")
+start_button_path = NodePath("UI/StartMenu/Menu/VBox/StartButton")
+hud_container_path = NodePath("UI/HUD")
+shop_panel_path = NodePath("UI/ShopPanel")
+restart_button_path = NodePath("UI/HUD/RestartButton")
+victory_menu_path = NodePath("UI/VictoryMenu")
+victory_label_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/VictoryLabel")
+victory_restart_button_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/Buttons/RestartButton")
+victory_endless_button_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/Buttons/EndlessButton")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -51,7 +60,7 @@ text = "Defense: 0"
 layout_mode = 0
 offset_top = 136.0
 offset_right = 256.0
-offset_bottom = 236.0
+offset_bottom = 286.0
 
 [node name="RainTitle" type="Label" parent="UI/HUD/RainPanel"]
 layout_mode = 0
@@ -75,19 +84,38 @@ Defense: 0
 Damage: 0"
 
 [node name="NextRoundButton" type="Button" parent="UI/HUD"]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 10
 anchor_right = 1.0
-offset_top = 244.0
-offset_bottom = 280.0
+offset_top = 314.0
+offset_right = -24.0
+offset_bottom = 350.0
+grow_horizontal = 2
 text = "Next Round"
 
 [node name="StatusLabel" type="Label" parent="UI/HUD"]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 288.0
+offset_left = -4.0
+offset_top = 457.0
+offset_right = -4.0
+offset_bottom = 194.0
+grow_horizontal = 2
+grow_vertical = 2
 text = "Welcome to Adaptopolis!"
 autowrap_mode = 2
+
+[node name="RestartButton" type="Button" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 360.0
+offset_right = -23.0
+offset_bottom = 396.0
+grow_horizontal = 2
+text = "Restart"
 
 [node name="GridDisplay" type="GridContainer" parent="UI"]
 anchors_preset = 8
@@ -155,6 +183,116 @@ text = "Skip"
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Refresh"
+
+[node name="StartMenu" type="Control" parent="UI"]
+visible = false
+z_index = 50
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Backdrop" type="ColorRect" parent="UI/StartMenu"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.7)
+
+[node name="Menu" type="CenterContainer" parent="UI/StartMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="UI/StartMenu/Menu"]
+custom_minimum_size = Vector2(360, 220)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="UI/StartMenu/Menu/VBox"]
+layout_mode = 2
+text = "Adaptopolis"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="UI/StartMenu/Menu/VBox"]
+layout_mode = 2
+text = "Build resilient infrastructure before the storms arrive."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="StartButton" type="Button" parent="UI/StartMenu/Menu/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Start Game"
+
+[node name="HintLabel" type="Label" parent="UI/StartMenu/Menu/VBox"]
+layout_mode = 2
+text = "Survive 20 rounds to secure the city."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="VictoryMenu" type="Control" parent="UI"]
+visible = false
+z_index = 60
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Backdrop" type="ColorRect" parent="UI/VictoryMenu"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.65)
+
+[node name="Menu" type="CenterContainer" parent="UI/VictoryMenu"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="Panel" parent="UI/VictoryMenu/Menu"]
+custom_minimum_size = Vector2(380, 240)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="UI/VictoryMenu/Menu/Panel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+size_flags_vertical = 4
+alignment = 1
+
+[node name="VictoryLabel" type="Label" parent="UI/VictoryMenu/Menu/Panel/VBox"]
+layout_mode = 2
+text = "City secured!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="SummaryLabel" type="Label" parent="UI/VictoryMenu/Menu/Panel/VBox"]
+layout_mode = 2
+text = "Choose how to proceed."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="UI/VictoryMenu/Menu/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
+
+[node name="RestartButton" type="Button" parent="UI/VictoryMenu/Menu/Panel/VBox/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Restart"
+
+[node name="EndlessButton" type="Button" parent="UI/VictoryMenu/Menu/Panel/VBox/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Continue Endless"
 
 [node name="UIManager" type="Node" parent="UI"]
 script = ExtResource("2")

@@ -21,6 +21,15 @@ extends Node
 @export var grid_display_path: NodePath
 @export var shop_display_path: NodePath
 @export var status_label_path: NodePath
+@export var start_menu_path: NodePath
+@export var start_button_path: NodePath
+@export var hud_container_path: NodePath
+@export var shop_panel_path: NodePath
+@export var restart_button_path: NodePath
+@export var victory_menu_path: NodePath
+@export var victory_label_path: NodePath
+@export var victory_restart_button_path: NodePath
+@export var victory_endless_button_path: NodePath
 
 @export var facility_data_path: String = "res://data/facility_data.json"
 @export var locale_files: Dictionary = {
@@ -41,6 +50,18 @@ var shop_display: ShopDisplay = null
 var status_label: Label = null
 var next_round_button: Button = null
 var selected_offer_index: int = -1
+var start_menu: Control = null
+var start_button: Button = null
+var hud_container: Control = null
+var shop_panel: Control = null
+var restart_button: Button = null
+var victory_menu: Control = null
+var victory_label: Label = null
+var victory_restart_button: Button = null
+var victory_endless_button: Button = null
+var game_active: bool = false
+var endless_mode: bool = false
+const VICTORY_ROUND_TARGET := 20
 
 func _ready() -> void:
 	city_state = _ensure_node(city_state_path, CityState) as CityState
@@ -53,6 +74,15 @@ func _ready() -> void:
 	save_manager = _ensure_node(save_manager_path, SaveManager) as SaveManager
 
 	status_label = get_node_or_null(status_label_path) as Label
+	start_menu = get_node_or_null(start_menu_path) as Control
+	start_button = get_node_or_null(start_button_path) as Button
+	hud_container = get_node_or_null(hud_container_path) as Control
+	shop_panel = get_node_or_null(shop_panel_path) as Control
+	restart_button = get_node_or_null(restart_button_path) as Button
+	victory_menu = get_node_or_null(victory_menu_path) as Control
+	victory_label = get_node_or_null(victory_label_path) as Label
+	victory_restart_button = get_node_or_null(victory_restart_button_path) as Button
+	victory_endless_button = get_node_or_null(victory_endless_button_path) as Button
 	_bind_controls()
 
 	grid_display = get_node_or_null(grid_display_path) as GridDisplay
@@ -81,15 +111,25 @@ func _ready() -> void:
 	shop_manager.connect("offers_changed", Callable(self, "_on_offers_changed"))
 	shop_manager.connect("purchase_failed", Callable(self, "_on_purchase_failed"))
 
-	start_new_game()
+	_show_start_menu()
 
 func start_new_game() -> void:
 	selected_offer_index = -1
+	endless_mode = false
+	game_active = true
+	_hide_start_menu()
+	_hide_victory_menu()
 	city_state.reset()
 	grid_manager.clear()
 	if grid_display:
+		grid_display.visible = true
 		_grid_display_call("set_preview_facility", [null])
+		_grid_display_call("clear_preview")
 		_grid_display_call("refresh_all")
+	if shop_panel:
+		shop_panel.visible = true
+	if hud_container:
+		hud_container.visible = true
 	if shop_display:
 		_shop_display_call("clear_selection")
 	var offers: Array = _shop_refresh_offers()
@@ -229,7 +269,6 @@ func _on_grid_cell_clicked(position: Vector2i) -> void:
 		pass
 
 func _bind_controls() -> void:
-	next_round_button = null
 	if not next_round_button_path.is_empty():
 		next_round_button = get_node_or_null(next_round_button_path) as Button
 	if next_round_button:
@@ -238,18 +277,27 @@ func _bind_controls() -> void:
 			next_round_button.disconnect("pressed", pressed_callable)
 		next_round_button.connect("pressed", pressed_callable)
 
+	_connect_button(start_button, "_on_start_pressed")
+	_connect_button(restart_button, "_on_restart_pressed")
+	_connect_button(victory_restart_button, "_on_restart_pressed")
+	_connect_button(victory_endless_button, "_on_victory_endless_pressed")
+
 func _on_next_round_pressed() -> void:
+	if not game_active:
+		return
 	if city_state and city_state.is_game_over():
 		return
 	var report := simulate_round()
 	if grid_display:
 		_grid_display_call("refresh_all")
+	if not endless_mode and city_state.round_number > VICTORY_ROUND_TARGET:
+		_handle_victory(report)
+		return
 	var forecast := _update_forecast()
 	var intensity := int(report.get("intensity", 0))
 	var defense := int(report.get("defense", 0))
 	var damage := int(report.get("damage", 0))
 	_show_status("Rain %d vs Defense %d -> Damage %d. Next rain intensity: %d." % [intensity, defense, damage, forecast])
-
 func _on_city_stats_changed() -> void:
 	_update_button_state()
 
@@ -275,6 +323,90 @@ func _ensure_node(path: NodePath, script_type) -> Node:
 	add_child(node)
 	return node
 
+func _show_start_menu() -> void:
+	game_active = false
+	endless_mode = false
+	if start_menu:
+		start_menu.visible = true
+	if hud_container:
+		hud_container.visible = false
+	if shop_panel:
+		shop_panel.visible = false
+	if grid_display:
+		grid_display.visible = false
+		_grid_display_call("set_preview_facility", [null])
+		_grid_display_call("clear_preview")
+	selected_offer_index = -1
+	_shop_display_call("clear_selection")
+	_update_button_state()
+	_show_status("Welcome to Adaptopolis! Press Start to begin.")
+
+func _hide_start_menu() -> void:
+	if start_menu:
+		start_menu.visible = false
+	if hud_container:
+		hud_container.visible = true
+	if shop_panel:
+		shop_panel.visible = true
+	if grid_display:
+		grid_display.visible = true
+	_update_button_state()
+
+func _show_victory_menu(summary: String) -> void:
+	game_active = false
+	if victory_label:
+		victory_label.text = summary
+	if victory_menu:
+		victory_menu.visible = true
+		var summary_label := victory_menu.get_node_or_null("Menu/Panel/VBox/SummaryLabel") as Label
+		if summary_label:
+			summary_label.text = "Continue in endless mode or restart the campaign."
+	if shop_panel:
+		shop_panel.visible = false
+	_update_button_state()
+
+func _hide_victory_menu() -> void:
+	if victory_menu:
+		victory_menu.visible = false
+	if shop_panel:
+		shop_panel.visible = true
+	_update_button_state()
+
+func _handle_victory(report: Dictionary) -> void:
+	game_active = false
+	endless_mode = false
+	selected_offer_index = -1
+	_shop_display_call("clear_selection")
+	_grid_display_call("set_preview_facility", [null])
+	_grid_display_call("clear_preview")
+	var completed_rounds: int = 0
+	if city_state:
+		completed_rounds = max(city_state.round_number - 1, 0)
+	var summary := "City secured! Completed %d rounds." % completed_rounds
+	_show_status("%s Choose an option to proceed." % summary)
+	_show_victory_menu(summary)
+
+func _on_start_pressed() -> void:
+	start_new_game()
+
+func _on_restart_pressed() -> void:
+	start_new_game()
+
+func _on_victory_endless_pressed() -> void:
+	endless_mode = true
+	game_active = true
+	_hide_victory_menu()
+	var forecast := _update_forecast()
+	_show_status("Endless mode engaged. Next rain intensity: %d." % forecast)
+	_update_button_state()
+
+func _connect_button(button: Button, method_name: String) -> void:
+	if button == null:
+		return
+	var callable := Callable(self, method_name)
+	if button.is_connected("pressed", callable):
+		button.disconnect("pressed", callable)
+	button.connect("pressed", callable)
 func _shop_refresh_offers() -> Array:
 	if shop_manager and shop_manager.has_method("refresh_offers"):
 		var result = shop_manager.call("refresh_offers")
