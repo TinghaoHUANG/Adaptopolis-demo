@@ -190,8 +190,3 @@ func _on_cell_mouse_exited(pos: Vector2i) -> void:
 
 func _on_grid_updated(_facility, _origin = Vector2i.ZERO) -> void:
 	refresh_all()
-
-
-
-
-

@@ -60,5 +60,3 @@ func prepare_forecast(round_number: int) -> int:
 
 func get_forecast() -> int:
 	return cached_intensity if has_cached_forecast else 0
-
-

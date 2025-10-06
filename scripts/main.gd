@@ -309,17 +309,3 @@ func _show_status(message: String) -> void:
 	if status_label:
 		status_label.text = message
 	print(message)
-
-
-
-
-
-
-
-
-
-
-
-
-
-

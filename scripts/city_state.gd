@@ -89,10 +89,3 @@ func get_snapshot() -> Dictionary:
 		"round": round_number,
 		"last_damage": last_damage
 	}
-
-
-
-
-
-
-

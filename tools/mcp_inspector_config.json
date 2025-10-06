@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "local-godot": {
+      "transport": {
+        "type": "stdio",
+        "command": "cmd",
+        "args": [
+          "/c",
+          "set \"GODOT_PATH=d:\\Godot_v4.4-stable_win64_console.exe\" && set \"PATH=d:\\node-v20.17.0-win-x64;%PATH%\" && cd /d d:\\godot-mcp && node build\\index.js"
+        ],
+        "env": {}
+      }
+    }
+  }
+}

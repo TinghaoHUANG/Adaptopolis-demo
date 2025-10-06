@@ -136,7 +136,7 @@ func _resolve_merges(facility: Facility) -> void:
 func remove_facility(facility: Facility) -> void:
 	if not facility_cells.has(facility):
 		return
-	var positions: Array[Vector2i] = facility_cells[facility] as Array[Vector2i]
+	var positions = facility_cells[facility] as Array[Vector2i]
 	for pos in positions:
 		var cell: GridCell = get_cell(pos)
 		if cell == null:
@@ -172,7 +172,7 @@ func _get_neighbor_facilities(facility: Facility) -> Array[Facility]:
 	var neighbors: Array[Facility] = []
 	var seen: Dictionary = {}
 	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
-	var positions: Array[Vector2i] = facility_cells.get(facility, []) as Array[Vector2i]
+	var positions = facility_cells.get(facility, []) as Array[Vector2i]
 	for pos in positions:
 		for dir in directions:
 			var neighbor_pos: Vector2i = pos + dir
@@ -257,7 +257,3 @@ func _set_facility_footprint(facility: Facility) -> void:
 		cell.occupied = true
 		cell.facility_ref = facility
 		facility_cells[facility].append(pos)
-
-
-
-

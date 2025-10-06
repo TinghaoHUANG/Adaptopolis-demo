@@ -79,4 +79,3 @@ func _clone_shape(source: Array) -> Array:
 	for row in source:
 		result.append(row.duplicate())
 	return result
-
