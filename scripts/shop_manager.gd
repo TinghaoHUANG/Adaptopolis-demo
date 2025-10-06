@@ -44,14 +44,19 @@ func refresh_offers() -> Array[Facility]:
 func get_offers() -> Array[Facility]:
     return current_offers.duplicate()
 
-func purchase_offer(index: int, grid_manager: GridManager, origin: Vector2i) -> bool:
+func purchase_offer(index: int, grid_manager: GridManager, origin: Vector2i, template_override: Facility = null) -> bool:
     if index < 0 or index >= current_offers.size():
         emit_signal("purchase_failed", "Invalid offer index")
         return false
     if city_state == null:
         emit_signal("purchase_failed", "City state unavailable")
         return false
-    var facility: Facility = current_offers[index].clone()
+    var source: Facility = current_offers[index]
+    var facility: Facility
+    if template_override != null and template_override.id == source.id:
+        facility = template_override.clone()
+    else:
+        facility = source.clone()
     if not city_state.can_afford(facility.cost):
         emit_signal("purchase_failed", "Insufficient funds")
         return false
@@ -76,5 +81,3 @@ func skip_offer(index: int) -> bool:
     current_offers.remove_at(index)
     emit_signal("offers_changed", current_offers.duplicate())
     return true
-
-

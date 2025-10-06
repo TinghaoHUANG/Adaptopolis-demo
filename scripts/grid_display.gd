@@ -50,11 +50,14 @@ func set_grid_manager(manager: GridManager) -> void:
 			grid_manager.disconnect("facility_placed", Callable(self, "_on_grid_updated"))
 			grid_manager.disconnect("facility_removed", Callable(self, "_on_grid_updated"))
 			grid_manager.disconnect("facility_merged", Callable(self, "_on_grid_updated"))
+		if grid_manager.is_connected("facility_moved", Callable(self, "_on_grid_moved")):
+			grid_manager.disconnect("facility_moved", Callable(self, "_on_grid_moved"))
 	grid_manager = manager
 	if grid_manager:
 		grid_manager.connect("facility_placed", Callable(self, "_on_grid_updated"))
 		grid_manager.connect("facility_removed", Callable(self, "_on_grid_updated"))
 		grid_manager.connect("facility_merged", Callable(self, "_on_grid_updated"))
+		grid_manager.connect("facility_moved", Callable(self, "_on_grid_moved"))
 	refresh_all()
 
 func set_preview_facility(facility: Facility) -> void:
@@ -187,6 +190,9 @@ func _on_cell_mouse_exited(pos: Vector2i) -> void:
 	emit_signal("cell_hover_exited", pos)
 	if hover_origin == pos:
 		clear_preview()
+
+func _on_grid_moved(_facility, _new_origin: Vector2i, _previous_origin: Vector2i) -> void:
+	_on_grid_updated(_facility, _new_origin)
 
 func _on_grid_updated(_facility, _origin = Vector2i.ZERO) -> void:
 	refresh_all()

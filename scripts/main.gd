@@ -50,6 +50,9 @@ var shop_display: ShopDisplay = null
 var status_label: Label = null
 var next_round_button: Button = null
 var selected_offer_index: int = -1
+var selected_preview_facility: Facility = null
+var dragged_facility: Facility = null
+var dragged_original_origin: Vector2i = Vector2i.ZERO
 var start_menu: Control = null
 var start_button: Button = null
 var hud_container: Control = null
@@ -114,6 +117,8 @@ func _ready() -> void:
 	_show_start_menu()
 
 func start_new_game() -> void:
+	_cancel_dragged_facility(false)
+	_clear_selection_preview()
 	selected_offer_index = -1
 	endless_mode = false
 	game_active = true
@@ -123,8 +128,6 @@ func start_new_game() -> void:
 	grid_manager.clear()
 	if grid_display:
 		grid_display.visible = true
-		_grid_display_call("set_preview_facility", [null])
-		_grid_display_call("clear_preview")
 		_grid_display_call("refresh_all")
 	if shop_panel:
 		shop_panel.visible = true
@@ -148,11 +151,17 @@ func simulate_round() -> Dictionary:
 	return report
 
 func attempt_purchase(index: int, origin: Vector2i) -> bool:
+	if _is_dragging():
+		_show_status("Finish relocating the current facility before placing new builds.")
+		return false
 	if not shop_manager:
 		return false
-	return _shop_purchase_offer(index, grid_manager, origin)
+	return _shop_purchase_offer(index, grid_manager, origin, selected_preview_facility)
 
 func save_game() -> bool:
+	if _is_dragging():
+		_show_status("Place the facility you're moving before saving.")
+		return false
 	if not save_manager:
 		return false
 	var success := save_manager.save_game(city_state, grid_manager)
@@ -161,6 +170,8 @@ func save_game() -> bool:
 	return success
 
 func load_game() -> bool:
+	_cancel_dragged_facility(true)
+	_clear_selection_preview()
 	if not save_manager:
 		return false
 	var loaded := save_manager.load_game(city_state, grid_manager, facility_library)
@@ -179,9 +190,8 @@ func _on_facility_placed(_facility, _origin: Vector2i) -> void:
 
 func _on_facility_purchased(facility) -> void:
 	selected_offer_index = -1
+	_clear_selection_preview()
 	if grid_display:
-		_grid_display_call("set_preview_facility", [null])
-		_grid_display_call("clear_preview")
 		_grid_display_call("refresh_all")
 	if shop_display:
 		_shop_display_call("clear_selection")
@@ -192,13 +202,12 @@ func _on_facility_purchased(facility) -> void:
 func _on_offers_changed(offers: Array) -> void:
 	if shop_display:
 		_shop_display_call("set_offers", [offers])
-	if grid_display and selected_offer_index >= 0:
-		var current_offers := _shop_get_offers()
-		if selected_offer_index < current_offers.size():
-			_grid_display_call("set_preview_facility", [current_offers[selected_offer_index]])
-		else:
+	if selected_offer_index >= 0 and offers.size() > selected_offer_index:
+		_set_selected_preview_from_offer(offers[selected_offer_index])
+	else:
+		if selected_offer_index >= 0:
 			selected_offer_index = -1
-			_grid_display_call("set_preview_facility", [null])
+		_clear_selection_preview()
 
 func _on_purchase_failed(reason: String) -> void:
 	var message := "Cannot complete purchase."
@@ -216,57 +225,89 @@ func _on_purchase_failed(reason: String) -> void:
 	_show_status(message)
 
 func _on_shop_offer_selected(index: int) -> void:
+	if _is_dragging():
+		_show_status("Finish relocating the current facility before buying a new one.")
+		if shop_display:
+			_shop_display_call("clear_selection")
+		selected_offer_index = -1
+		_clear_selection_preview()
+		return
 	selected_offer_index = index
 	if index < 0:
-		if grid_display:
-			_grid_display_call("set_preview_facility", [null])
+		_clear_selection_preview()
 		_show_status("Select a facility to prepare for placement.")
 		return
 	var offers := _shop_get_offers()
 	if index >= offers.size():
 		selected_offer_index = -1
-		if grid_display:
-			_grid_display_call("set_preview_facility", [null])
+		_clear_selection_preview()
 		return
-	var facility = offers[index]
-	if grid_display:
-		_grid_display_call("set_preview_facility", [facility])
-	_show_status("Selected %s for %d funds. Click a grid tile to place." % [facility.name, facility.cost])
+	_set_selected_preview_from_offer(offers[index])
 
 func _on_shop_skip_selected(index: int) -> void:
+	if _is_dragging():
+		_show_status("Finish relocating the current facility before adjusting shop offers.")
+		return
 	if not shop_manager:
 		return
 	if _shop_skip_offer(index):
 		selected_offer_index = -1
-		if grid_display:
-			_grid_display_call("set_preview_facility", [null])
+		_clear_selection_preview()
 		if shop_display:
 			_shop_display_call("clear_selection")
 		_show_status("Skipped offer. Pick another facility when ready.")
 
 func _on_shop_refresh_requested() -> void:
+	if _is_dragging():
+		_show_status("Finish relocating the current facility before refreshing the shop.")
+		return
 	_shop_refresh_offers()
 	selected_offer_index = -1
-	if grid_display:
-		_grid_display_call("set_preview_facility", [null])
+	_clear_selection_preview()
 	if shop_display:
 		_shop_display_call("clear_selection")
 	_show_status("Shop refreshed with new options.")
 
 func _on_grid_cell_clicked(position: Vector2i) -> void:
-	if selected_offer_index < 0:
-		_show_status("Select a facility before placing it on the grid.")
+	if not game_active:
 		return
-	if attempt_purchase(selected_offer_index, position):
-		selected_offer_index = -1
-		if shop_display:
-			_shop_display_call("clear_selection")
-		if grid_display:
-			_grid_display_call("set_preview_facility", [null])
-			_grid_display_call("clear_preview")
-	else:
-		# Failure feedback handled by purchase_failed signal.
-		pass
+	if _is_dragging():
+		_attempt_drag_drop(position)
+		return
+	if selected_offer_index >= 0:
+		if attempt_purchase(selected_offer_index, position):
+			selected_offer_index = -1
+			_clear_selection_preview()
+			if shop_display:
+				_shop_display_call("clear_selection")
+		return
+	var existing := grid_manager.get_facility_at(position) if grid_manager else null
+	if existing:
+		_begin_facility_drag(existing)
+		return
+	_show_status("Select a facility to place or click an existing one to move it.")
+
+func _input(event: InputEvent) -> void:
+	if not game_active:
+		return
+	var mouse_event := event as InputEventMouseButton
+	if mouse_event == null:
+		return
+	if not mouse_event.pressed or mouse_event.double_click:
+		return
+	if mouse_event.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	if _is_dragging():
+		return
+	if selected_offer_index < 0 or selected_preview_facility == null:
+		return
+	if grid_display:
+		var rect := grid_display.get_global_rect()
+		if not rect.has_point(mouse_event.position):
+			return
+	var clockwise := not mouse_event.shift_pressed
+	_rotate_preview(clockwise)
+	get_viewport().set_input_as_handled()
 
 func _bind_controls() -> void:
 	if not next_round_button_path.is_empty():
@@ -284,6 +325,9 @@ func _bind_controls() -> void:
 
 func _on_next_round_pressed() -> void:
 	if not game_active:
+		return
+	if _is_dragging():
+		_show_status("Finish relocating the current facility before advancing to the next round.")
 		return
 	if city_state and city_state.is_game_over():
 		return
@@ -304,7 +348,12 @@ func _on_city_stats_changed() -> void:
 func _update_button_state() -> void:
 	if next_round_button == null:
 		return
-	next_round_button.disabled = city_state != null and city_state.is_game_over()
+	var disabled := not game_active
+	if city_state and city_state.is_game_over():
+		disabled = true
+	if _is_dragging():
+		disabled = true
+	next_round_button.disabled = disabled
 
 func _update_forecast() -> int:
 	if rain_system == null or city_state == null:
@@ -324,6 +373,8 @@ func _ensure_node(path: NodePath, script_type) -> Node:
 	return node
 
 func _show_start_menu() -> void:
+	_cancel_dragged_facility(true)
+	_clear_selection_preview()
 	game_active = false
 	endless_mode = false
 	if start_menu:
@@ -334,8 +385,6 @@ func _show_start_menu() -> void:
 		shop_panel.visible = false
 	if grid_display:
 		grid_display.visible = false
-		_grid_display_call("set_preview_facility", [null])
-		_grid_display_call("clear_preview")
 	selected_offer_index = -1
 	_shop_display_call("clear_selection")
 	_update_button_state()
@@ -353,6 +402,8 @@ func _hide_start_menu() -> void:
 	_update_button_state()
 
 func _show_victory_menu(summary: String) -> void:
+	_cancel_dragged_facility(true)
+	_clear_selection_preview()
 	game_active = false
 	if victory_label:
 		victory_label.text = summary
@@ -372,13 +423,12 @@ func _hide_victory_menu() -> void:
 		shop_panel.visible = true
 	_update_button_state()
 
-func _handle_victory(report: Dictionary) -> void:
+func _handle_victory(_report: Dictionary) -> void:
 	game_active = false
 	endless_mode = false
 	selected_offer_index = -1
+	_clear_selection_preview()
 	_shop_display_call("clear_selection")
-	_grid_display_call("set_preview_facility", [null])
-	_grid_display_call("clear_preview")
 	var completed_rounds: int = 0
 	if city_state:
 		completed_rounds = max(city_state.round_number - 1, 0)
@@ -407,6 +457,137 @@ func _connect_button(button: Button, method_name: String) -> void:
 	if button.is_connected("pressed", callable):
 		button.disconnect("pressed", callable)
 	button.connect("pressed", callable)
+
+func _is_dragging() -> bool:
+	return dragged_facility != null
+
+func _rotation_hint() -> String:
+	return "Right-click to rotate clockwise (顺时针), Shift + Right-click to rotate counter-clockwise (逆时针)."
+
+func _maybe_append_rotation_hint(message: String) -> String:
+	if not game_active:
+		return message
+	if selected_preview_facility == null:
+		return message
+	if _is_dragging():
+		return message
+	if message.find("Right-click") != -1:
+		return message
+	return "%s %s" % [message, _rotation_hint()]
+
+func _build_selection_message(facility: Facility) -> String:
+	if facility == null:
+		return "Select a facility before placing it on the grid."
+	return "Selected %s for %d funds. Right-click to rotate (Shift + Right-click for counter-clockwise). Click a grid tile to place." % [facility.name, facility.cost]
+
+func _clear_selection_preview() -> void:
+	selected_preview_facility = null
+	_grid_display_call("set_preview_facility", [null])
+	_grid_display_call("clear_preview")
+
+func _set_selected_preview_from_offer(facility: Facility) -> void:
+	if facility == null:
+		_clear_selection_preview()
+		return
+	selected_preview_facility = facility.clone()
+	_grid_display_call("set_preview_facility", [selected_preview_facility])
+	_show_status(_build_selection_message(selected_preview_facility))
+
+func _rotate_preview(clockwise: bool) -> void:
+	if selected_preview_facility == null:
+		return
+	var shape: Array = selected_preview_facility.shape
+	if shape.is_empty():
+		return
+	if clockwise:
+		selected_preview_facility.shape = _rotate_shape_clockwise(shape)
+	else:
+		selected_preview_facility.shape = _rotate_shape_counterclockwise(shape)
+	_grid_display_call("set_preview_facility", [selected_preview_facility])
+	_show_status(_build_selection_message(selected_preview_facility))
+
+func _rotate_shape_clockwise(shape: Array) -> Array:
+	if shape.is_empty():
+		return []
+	var height := shape.size()
+	var width := (shape[0] as Array).size()
+	var rotated: Array = []
+	for x in range(width):
+		var row: Array = []
+		for y in range(height - 1, -1, -1):
+			row.append(shape[y][x])
+		rotated.append(row)
+	return rotated
+
+func _rotate_shape_counterclockwise(shape: Array) -> Array:
+	if shape.is_empty():
+		return []
+	var height := shape.size()
+	var width := (shape[0] as Array).size()
+	var rotated: Array = []
+	for x in range(width - 1, -1, -1):
+		var row: Array = []
+		for y in range(height):
+			row.append(shape[y][x])
+		rotated.append(row)
+	return rotated
+
+func _begin_facility_drag(facility: Facility) -> void:
+	if facility == null:
+		return
+	if grid_manager == null:
+		return
+	dragged_facility = facility
+	dragged_original_origin = grid_manager.get_facility_origin(facility)
+	grid_manager.remove_facility(facility)
+	if grid_display:
+		_grid_display_call("set_preview_facility", [facility])
+	_show_status("Repositioning %s. Choose a new tile for its top-left corner." % facility.name)
+	_update_button_state()
+
+func _attempt_drag_drop(position: Vector2i) -> void:
+	if not _is_dragging():
+		return
+	if grid_manager == null:
+		return
+	var facility := dragged_facility
+	if not grid_manager.can_place_facility(facility, position):
+		_show_status("That location is blocked. Choose another tile or click the original spot to cancel.")
+		if grid_display:
+			_grid_display_call("set_preview_facility", [facility])
+		return
+	var placed := grid_manager.place_facility(facility, position)
+	if not placed:
+		_show_status("Unable to move %s there. Try a different tile." % facility.name)
+		if grid_display:
+			_grid_display_call("set_preview_facility", [facility])
+		return
+	dragged_facility = null
+	dragged_original_origin = Vector2i.ZERO
+	if grid_display:
+		_grid_display_call("set_preview_facility", [null])
+		_grid_display_call("clear_preview")
+	_show_status("Moved %s to a new position." % facility.name)
+	_update_button_state()
+
+func _cancel_dragged_facility(restore: bool = true, message: String = "") -> void:
+	if not _is_dragging():
+		return
+	var facility := dragged_facility
+	var origin := dragged_original_origin
+	dragged_facility = null
+	dragged_original_origin = Vector2i.ZERO
+	if restore and grid_manager and facility:
+		var restored := grid_manager.can_place_facility(facility, origin) and grid_manager.place_facility(facility, origin)
+		if not restored:
+			push_warning("Failed to restore facility %s to origin %s" % [facility.name, origin])
+	if grid_display:
+		_grid_display_call("set_preview_facility", [null])
+		_grid_display_call("clear_preview")
+	if not message.is_empty():
+		_show_status(message)
+	_update_button_state()
+
 func _shop_refresh_offers() -> Array:
 	if shop_manager and shop_manager.has_method("refresh_offers"):
 		var result = shop_manager.call("refresh_offers")
@@ -424,9 +605,9 @@ func _shop_skip_offer(index: int) -> bool:
 		return bool(shop_manager.call("skip_offer", index))
 	return false
 
-func _shop_purchase_offer(index: int, manager: Node, origin: Vector2i) -> bool:
+func _shop_purchase_offer(index: int, manager: Node, origin: Vector2i, template: Facility = null) -> bool:
 	if shop_manager and shop_manager.has_method("purchase_offer"):
-		return bool(shop_manager.call("purchase_offer", index, manager, origin))
+		return bool(shop_manager.call("purchase_offer", index, manager, origin, template))
 	return false
 
 func _grid_display_call(method: StringName, args: Array = []) -> void:
@@ -438,6 +619,7 @@ func _shop_display_call(method: StringName, args: Array = []) -> void:
 		shop_display.callv(method, args)
 
 func _show_status(message: String) -> void:
+	message = _maybe_append_rotation_hint(message)
 	if status_label:
 		status_label.text = message
 	print(message)

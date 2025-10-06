@@ -12,6 +12,7 @@ extends Node
 signal facility_placed(facility: Facility, origin: Vector2i)
 signal facility_removed(facility: Facility)
 signal facility_merged(facility: Facility, absorbed: Facility)
+signal facility_moved(facility: Facility, new_origin: Vector2i, previous_origin: Vector2i)
 
 const GRID_WIDTH := 6
 const GRID_HEIGHT := 6
@@ -106,6 +107,23 @@ func can_place_facility(facility: Facility, origin: Vector2i) -> bool:
 			return false
 	return true
 
+func can_relocate_facility(facility: Facility, origin: Vector2i) -> bool:
+	if facility == null:
+		return false
+	if not facility_cells.has(facility):
+		return false
+	var footprint: Array[Vector2i] = facility.get_footprint()
+	for offset in footprint:
+		var target: Vector2i = origin + offset
+		var cell: GridCell = get_cell(target)
+		if cell == null:
+			return false
+		if cell.is_building and facility.id != "green_roof":
+			return false
+		if cell.occupied and cell.facility_ref != facility:
+			return false
+	return true
+
 func place_facility(facility: Facility, origin: Vector2i) -> bool:
 	if not can_place_facility(facility, origin):
 		return false
@@ -114,6 +132,17 @@ func place_facility(facility: Facility, origin: Vector2i) -> bool:
 	if city_state:
 		city_state.register_facility(facility)
 	emit_signal("facility_placed", facility, origin)
+	_resolve_merges(facility)
+	return true
+
+func move_facility(facility: Facility, origin: Vector2i) -> bool:
+	if not can_relocate_facility(facility, origin):
+		return false
+	var previous_origin: Vector2i = facility_origins.get(facility, Vector2i.ZERO)
+	_clear_facility_cells(facility)
+	facility_origins[facility] = origin
+	_set_facility_footprint(facility)
+	emit_signal("facility_moved", facility, origin, previous_origin)
 	_resolve_merges(facility)
 	return true
 
@@ -136,6 +165,16 @@ func _resolve_merges(facility: Facility) -> void:
 func remove_facility(facility: Facility) -> void:
 	if not facility_cells.has(facility):
 		return
+	_clear_facility_cells(facility)
+	facility_cells.erase(facility)
+	facility_origins.erase(facility)
+	if city_state:
+		city_state.unregister_facility(facility)
+	emit_signal("facility_removed", facility)
+
+func _clear_facility_cells(facility: Facility) -> void:
+	if not facility_cells.has(facility):
+		return
 	var positions = facility_cells[facility] as Array[Vector2i]
 	for pos in positions:
 		var cell: GridCell = get_cell(pos)
@@ -143,11 +182,7 @@ func remove_facility(facility: Facility) -> void:
 			continue
 		cell.facility_ref = null
 		cell.occupied = cell.is_building
-	facility_cells.erase(facility)
-	facility_origins.erase(facility)
-	if city_state:
-		city_state.unregister_facility(facility)
-	emit_signal("facility_removed", facility)
+	facility_cells[facility].clear()
 
 func get_cell(position: Vector2i) -> GridCell:
 	if position.x < 0 or position.y < 0:
