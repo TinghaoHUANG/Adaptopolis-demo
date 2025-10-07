@@ -12,7 +12,7 @@ extends Node
 @export var round_label_path: NodePath
 @export var health_label_path: NodePath
 @export var money_label_path: NodePath
-@export var defense_label_path: NodePath
+@export var resilience_label_path: NodePath
 
 var city_state: CityState = null
 
@@ -32,7 +32,7 @@ func _on_stats_changed() -> void:
     update_round(stats["round"])
     update_health(stats["health"], city_state.max_health)
     update_money(stats["money"])
-    update_defense(city_state.get_total_resilience())
+    update_resilience(city_state.get_total_resilience())
 
 func update_round(round_number: int) -> void:
     var label: Label = _get_label(round_label_path)
@@ -49,20 +49,20 @@ func update_money(money: int) -> void:
     if label:
         label.text = "%s %d" % [tr("BUY_FACILITY"), money]
 
-func update_defense(defense: int) -> void:
-    var label: Label = _get_label(defense_label_path)
+func update_resilience(resilience: int) -> void:
+    var label: Label = _get_label(resilience_label_path)
     if label:
-        label.text = "Defense: %d" % defense
+        label.text = "Resilience: %d" % resilience
 
 func show_rain_report(report: Dictionary) -> void:
     var hud: Node = _get_node(hud_path)
     if hud and hud.has_method("display_rain_report"):
         hud.call("display_rain_report", report)
 
-func show_rain_forecast(intensity: int) -> void:
+func show_rain_forecast(forecast_range: Dictionary) -> void:
     var hud: Node = _get_node(hud_path)
     if hud and hud.has_method("set_forecast"):
-        hud.call("set_forecast", intensity)
+        hud.call("set_forecast", forecast_range)
 
 func _get_label(path: NodePath) -> Label:
     var node: Node = _get_node(path)

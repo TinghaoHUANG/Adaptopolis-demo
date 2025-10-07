@@ -74,6 +74,12 @@ func spend_money(cost: int) -> bool:
 	emit_signal("stats_changed")
 	return true
 
+func add_money(amount: int) -> void:
+	if amount <= 0:
+		return
+	money += amount
+	emit_signal("stats_changed")
+
 func advance_round() -> void:
 	round_number += 1
 	last_damage = 0

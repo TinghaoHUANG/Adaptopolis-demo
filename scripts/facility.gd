@@ -8,6 +8,14 @@
 class_name Facility
 extends Resource
 
+const MAX_LEVEL := 3
+const LEVEL_COST_MULTIPLIERS := {
+	1: 1.0,
+	2: 1.9,
+	3: 3.5
+}
+const LEVEL_RESILIENCE_MULTIPLIER := 1.5
+
 @export var id: String = ""
 @export var name: String = ""
 @export var type: String = ""
@@ -17,6 +25,10 @@ extends Resource
 @export var level: int = 1
 @export var description: String = ""
 @export var special_rule: String = ""
+@export var unlock_round: int = 1
+
+var base_cost: int = 0
+var base_resilience: int = 0
 
 func clone() -> Facility:
 	var copy: Facility = Facility.new()
@@ -29,6 +41,9 @@ func clone() -> Facility:
 	copy.level = level
 	copy.description = description
 	copy.special_rule = special_rule
+	copy.unlock_round = unlock_round
+	copy.base_cost = base_cost
+	copy.base_resilience = base_resilience
 	return copy
 
 static func from_dict(data: Dictionary) -> Facility:
@@ -42,6 +57,9 @@ static func from_dict(data: Dictionary) -> Facility:
 	facility.level = data.get("level", 1)
 	facility.description = data.get("description", "")
 	facility.special_rule = data.get("special_rule", "")
+	facility.unlock_round = data.get("unlock_round", 1)
+	facility.base_cost = facility.cost
+	facility.base_resilience = facility.resilience
 	return facility
 
 func to_dict() -> Dictionary:
@@ -54,7 +72,8 @@ func to_dict() -> Dictionary:
 		"resilience": resilience,
 		"level": level,
 		"description": description,
-		"special_rule": special_rule
+		"special_rule": special_rule,
+		"unlock_round": unlock_round
 	}
 
 func get_footprint() -> Array[Vector2i]:
@@ -66,13 +85,60 @@ func get_footprint() -> Array[Vector2i]:
 				footprint.append(Vector2i(x, y))
 	return footprint
 
-func merge_with(other: Facility) -> void:
+func can_merge_with(other: Facility) -> bool:
+	if other == null:
+		return false
+	if other.id != id:
+		return false
+	if other.level != level:
+		return false
+	if level >= MAX_LEVEL:
+		return false
+	return true
+
+func merge_with(other: Facility) -> bool:
+	if other == null:
+		return false
 	if other.id != id or other.level != level:
 		push_warning("Attempted to merge incompatible facilities: %s vs %s" % [id, other.id])
-		return
+		return false
+	if level >= MAX_LEVEL:
+		return false
 	level += 1
-	resilience = int(round(resilience * 1.5))
-	cost = int(round(cost * 1.3))
+	_apply_level_stats()
+	return true
+
+func upgrade_to_level(target_level: int) -> void:
+	target_level = clamp(target_level, 1, MAX_LEVEL)
+	level = max(level, 1)
+	if base_cost == 0:
+		base_cost = cost
+	if base_resilience == 0:
+		base_resilience = resilience
+	if level == target_level:
+		_apply_level_stats()
+		return
+	level = target_level
+	_apply_level_stats()
+
+func _apply_level_stats() -> void:
+	if base_cost == 0:
+		base_cost = cost
+	if base_resilience == 0:
+		base_resilience = resilience
+	resilience = _calculate_resilience_for_level(base_resilience, level)
+	cost = _calculate_cost_for_level(base_cost, level)
+
+func _calculate_cost_for_level(source_cost: int, target_level: int) -> int:
+	var fallback_key := MAX_LEVEL
+	var multiplier := float(LEVEL_COST_MULTIPLIERS.get(target_level, LEVEL_COST_MULTIPLIERS.get(fallback_key, 1.0)))
+	return int(round(source_cost * multiplier))
+
+func _calculate_resilience_for_level(source_resilience: int, target_level: int) -> int:
+	var result: float = float(source_resilience)
+	for _i in range(target_level - 1):
+		result *= LEVEL_RESILIENCE_MULTIPLIER
+	return int(round(result))
 
 func _clone_shape(source: Array) -> Array:
 	var result: Array = []

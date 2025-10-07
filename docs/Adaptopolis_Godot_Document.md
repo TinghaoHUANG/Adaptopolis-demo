@@ -119,8 +119,8 @@ var rain_intensity = base + round_number * 2
 
 Damage calculation:
 
-var total_defense = city.get_total_resilience()
-var effective_damage = max(rain_intensity - total_defense, 0)
+var total_Resilience = city.get_total_resilience()
+var effective_damage = max(rain_intensity - total_Resilience, 0)
 city.health -= effective_damage
 
 
@@ -206,7 +206,7 @@ TranslationServer.set_locale("zh")
     "cost": 12,
     "resilience": 5,
     "shape": [[true, true, true]],
-    "description": "A strong but expensive flood defense."
+    "description": "A strong but expensive flood Resilience."
   },
   {
     "id": "green_roof",
@@ -251,7 +251,7 @@ Detect adjacent identical facilities of the same level and merge them into an up
 
 Prompt 3 — Rain Simulation
 
-Implement rainfall intensity scaling with round progression, and apply damage based on city defense.
+Implement rainfall intensity scaling with round progression, and apply damage based on city Resilience.
 
 Prompt 4 — Localization-Ready UI
 

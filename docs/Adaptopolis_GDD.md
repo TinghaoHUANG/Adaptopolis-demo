@@ -63,7 +63,7 @@ The city map (6×8 grid) has limited space and some fixed “building obstacles.
 
 Facilities must fit geometrically; green roofs can overlap buildings.
 
-Placement affects synergy and long-term defense.
+Placement affects synergy and long-term Resilience.
 
 End of Round
 
@@ -105,7 +105,7 @@ Heavy Storm (high damage)
 
 Mild Rain (low damage)
 
-Infrastructure Failure (reduced defense temporarily)
+Infrastructure Failure (reduced Resilience temporarily)
 
 3.3 Economy System
 
@@ -136,7 +136,7 @@ Level	Upgrades through merging
 Types of Facilities
 Type	Example	Description
 Green	Rain Garden, Green Roof, Retention Pond	Nature-based solutions; often synergize; flexible
-Grey	Flood Wall, Dike Expansion	Engineered defenses; expensive but powerful
+Grey	Flood Wall, Dike Expansion	Engineered Resiliences; expensive but powerful
 Merging
 
 Two adjacent identical facilities of the same level automatically merge.
@@ -190,11 +190,11 @@ Epic	Unique/synergy facilities	5%
 
 Facilities may boost each other when adjacent:
 
-Two green infrastructures → +10% defense bonus.
+Two green infrastructures → +10% Resilience bonus.
 
 Green Roof above building → +income bonus.
 
-Grey + Green combination → improved overall defense efficiency.
+Grey + Green combination → improved overall Resilience efficiency.
 
 This encourages players to think spatially rather than stacking.
 
@@ -236,9 +236,9 @@ Achievement-style goals (e.g., “Survive 10 rounds without flood damage”)
 
 Trade-off between Cost and Flexibility
 
-Grey = high defense, expensive, rigid.
+Grey = high Resilience, expensive, rigid.
 
-Green = lower defense, cheaper, synergistic, space-efficient.
+Green = lower Resilience, cheaper, synergistic, space-efficient.
 
 Spatial Pressure
 
@@ -248,7 +248,7 @@ Placement becomes both a math and geometry puzzle.
 
 Income-Damage Feedback Loop
 
-Players doing well earn more → buy better defense.
+Players doing well earn more → buy better Resilience.
 
 Players taking damage earn less → downward pressure.
 

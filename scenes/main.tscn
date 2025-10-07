@@ -1,10 +1,14 @@
-[gd_scene load_steps=6 format=3 uid="uid://bu4u6yl2516gu"]
+[gd_scene load_steps=10 format=3 uid="uid://bu4u6yl2516gu"]
 
 [ext_resource type="Script" uid="uid://bm2gb3olffh6w" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" uid="uid://b27vm1jwb1mby" path="res://scripts/ui_manager.gd" id="2"]
 [ext_resource type="Script" uid="uid://cmme2bgybqrv5" path="res://scripts/hud_display.gd" id="3"]
 [ext_resource type="Script" uid="uid://2n5fjvlgj26w" path="res://scripts/grid_display.gd" id="4"]
 [ext_resource type="Script" uid="uid://uly2nmjawuly" path="res://scripts/shop_display.gd" id="5"]
+[ext_resource type="Texture2D" uid="uid://o5ilc0aj5660" path="res://icons/ground/ground_1.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://l4uxwwehynlt" path="res://icons/ground/ground_2.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://bwgtx8cy6h8xb" path="res://icons/ground/building_1.png" id="8"]
+[ext_resource type="Texture2D" uid="uid://d0btlqsccauvc" path="res://icons/ground/water_1.png" id="9"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1")
@@ -22,6 +26,10 @@ victory_menu_path = NodePath("UI/VictoryMenu")
 victory_label_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/VictoryLabel")
 victory_restart_button_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/Buttons/RestartButton")
 victory_endless_button_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/Buttons/EndlessButton")
+facility_info_panel_path = NodePath("UI/FacilityInfo")
+facility_info_title_path = NodePath("UI/FacilityInfo/Margin/VBox/Title")
+facility_info_details_path = NodePath("UI/FacilityInfo/Margin/VBox/Details")
+facility_info_sell_button_path = NodePath("UI/FacilityInfo/Margin/VBox/SellButton")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -52,9 +60,9 @@ text = "Health: 20/20"
 layout_mode = 2
 text = "Funds: 30"
 
-[node name="DefenseLabel" type="Label" parent="UI/HUD/StatsContainer"]
+[node name="ResilienceLabel" type="Label" parent="UI/HUD/StatsContainer"]
 layout_mode = 2
-text = "Defense: 0"
+text = "Resilience: 0"
 
 [node name="RainPanel" type="Panel" parent="UI/HUD"]
 layout_mode = 0
@@ -68,7 +76,7 @@ anchor_right = 1.0
 offset_left = 8.0
 offset_top = 8.0
 offset_right = -8.0
-text = "Rain Report"
+text = "Rain Forecast"
 
 [node name="RainReportLabel" type="Label" parent="UI/HUD/RainPanel"]
 layout_mode = 0
@@ -78,10 +86,8 @@ offset_left = 8.0
 offset_top = 32.0
 offset_right = -8.0
 offset_bottom = -8.0
-text = "Next Rain: ?
-Rain: 0
-Defense: 0
-Damage: 0"
+text = "Rain Forecast
+Range: ? - ?"
 
 [node name="NextRoundButton" type="Button" parent="UI/HUD"]
 layout_mode = 1
@@ -129,6 +135,9 @@ offset_right = 192.0
 offset_bottom = 192.0
 columns = 6
 script = ExtResource("4")
+ground_textures = [ExtResource("6"), ExtResource("7")]
+building_texture = ExtResource("8")
+water_texture = ExtResource("9")
 
 [node name="ShopPanel" type="PanelContainer" parent="UI"]
 anchors_preset = 6
@@ -184,6 +193,39 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Refresh"
 
+[node name="FacilityInfo" type="PanelContainer" parent="UI"]
+offset_left = 340.0
+offset_top = 40.0
+offset_right = 600.0
+offset_bottom = 320.0
+
+[node name="Margin" type="MarginContainer" parent="UI/FacilityInfo"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="UI/FacilityInfo/Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UI/FacilityInfo/Margin/VBox"]
+layout_mode = 2
+text = "Facility"
+horizontal_alignment = 1
+
+[node name="Details" type="RichTextLabel" parent="UI/FacilityInfo/Margin/VBox"]
+custom_minimum_size = Vector2(220, 80)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_active = false
+
+[node name="SellButton" type="Button" parent="UI/FacilityInfo/Margin/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Sell"
+
 [node name="StartMenu" type="Control" parent="UI"]
 visible = false
 z_index = 50
@@ -191,6 +233,8 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Backdrop" type="ColorRect" parent="UI/StartMenu"]
 layout_mode = 0
@@ -203,6 +247,8 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="VBox" type="VBoxContainer" parent="UI/StartMenu/Menu"]
 custom_minimum_size = Vector2(360, 220)
@@ -240,6 +286,8 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Backdrop" type="ColorRect" parent="UI/VictoryMenu"]
 layout_mode = 0
@@ -300,4 +348,4 @@ hud_path = NodePath("../HUD")
 round_label_path = NodePath("../HUD/StatsContainer/RoundLabel")
 health_label_path = NodePath("../HUD/StatsContainer/HealthLabel")
 money_label_path = NodePath("../HUD/StatsContainer/MoneyLabel")
-defense_label_path = NodePath("../HUD/StatsContainer/DefenseLabel")
+resilience_label_path = NodePath("../HUD/StatsContainer/ResilienceLabel")

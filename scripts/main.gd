@@ -30,6 +30,10 @@ extends Node
 @export var victory_label_path: NodePath
 @export var victory_restart_button_path: NodePath
 @export var victory_endless_button_path: NodePath
+@export var facility_info_panel_path: NodePath
+@export var facility_info_title_path: NodePath
+@export var facility_info_details_path: NodePath
+@export var facility_info_sell_button_path: NodePath
 
 @export var facility_data_path: String = "res://data/facility_data.json"
 @export var locale_files: Dictionary = {
@@ -62,6 +66,12 @@ var victory_menu: Control = null
 var victory_label: Label = null
 var victory_restart_button: Button = null
 var victory_endless_button: Button = null
+var facility_info_panel: PanelContainer = null
+var facility_info_title: Label = null
+var facility_info_details: RichTextLabel = null
+var facility_info_sell_button: Button = null
+var hovered_facility: Facility = null
+var hovered_sell_price: int = 0
 var game_active: bool = false
 var endless_mode: bool = false
 const VICTORY_ROUND_TARGET := 20
@@ -86,18 +96,27 @@ func _ready() -> void:
 	victory_label = get_node_or_null(victory_label_path) as Label
 	victory_restart_button = get_node_or_null(victory_restart_button_path) as Button
 	victory_endless_button = get_node_or_null(victory_endless_button_path) as Button
+	facility_info_panel = get_node_or_null(facility_info_panel_path) as PanelContainer
+	facility_info_title = get_node_or_null(facility_info_title_path) as Label
+	facility_info_details = get_node_or_null(facility_info_details_path) as RichTextLabel
+	facility_info_sell_button = get_node_or_null(facility_info_sell_button_path) as Button
 	_bind_controls()
 
 	grid_display = get_node_or_null(grid_display_path) as GridDisplay
 	if grid_display:
 		_grid_display_call("set_grid_manager", [grid_manager])
 		grid_display.connect("cell_clicked", Callable(self, "_on_grid_cell_clicked"))
+		grid_display.connect("cell_hovered", Callable(self, "_on_grid_cell_hovered"))
+		grid_display.connect("cell_hover_exited", Callable(self, "_on_grid_cell_hover_exited"))
 
 	shop_display = get_node_or_null(shop_display_path) as ShopDisplay
 	if shop_display:
 		shop_display.connect("offer_selected", Callable(self, "_on_shop_offer_selected"))
 		shop_display.connect("skip_selected", Callable(self, "_on_shop_skip_selected"))
 		shop_display.connect("refresh_requested", Callable(self, "_on_shop_refresh_requested"))
+
+	if facility_info_sell_button:
+		facility_info_sell_button.connect("pressed", Callable(self, "_on_facility_sell_pressed"))
 
 	grid_manager.set_city_state(city_state)
 	facility_library.load_from_json(facility_data_path)
@@ -110,6 +129,9 @@ func _ready() -> void:
 		city_state.connect("stats_changed", Callable(self, "_on_city_stats_changed"))
 
 	grid_manager.connect("facility_placed", Callable(self, "_on_facility_placed"))
+	grid_manager.connect("facility_removed", Callable(self, "_on_grid_facility_removed"))
+	grid_manager.connect("facility_merged", Callable(self, "_on_grid_facility_merged"))
+	grid_manager.connect("facility_moved", Callable(self, "_on_grid_facility_moved"))
 	shop_manager.connect("facility_purchased", Callable(self, "_on_facility_purchased"))
 	shop_manager.connect("offers_changed", Callable(self, "_on_offers_changed"))
 	shop_manager.connect("purchase_failed", Callable(self, "_on_purchase_failed"))
@@ -119,6 +141,7 @@ func _ready() -> void:
 func start_new_game() -> void:
 	_cancel_dragged_facility(false)
 	_clear_selection_preview()
+	_hide_facility_info()
 	selected_offer_index = -1
 	endless_mode = false
 	game_active = true
@@ -137,16 +160,17 @@ func start_new_game() -> void:
 		_shop_display_call("clear_selection")
 	var offers: Array = _shop_refresh_offers()
 	_on_offers_changed(offers)
-	var forecast := _update_forecast()
+	var forecast_range := _update_forecast()
 	if ui_manager:
 		ui_manager.show_rain_report({})
-	_show_status("A new city rises. Incoming rain intensity: %d. Select a facility to begin building." % forecast)
+	_show_status("A new city rises. Rain forecast: %s. Select a facility to begin building." % _format_forecast_range(forecast_range))
 	_update_button_state()
 
 func simulate_round() -> Dictionary:
 	var report: Dictionary = rain_system.simulate_round(city_state)
 	ui_manager.show_rain_report(report)
-	city_state.add_income()
+	var income := city_state.add_income()
+	report["income"] = income
 	city_state.advance_round()
 	return report
 
@@ -172,16 +196,17 @@ func save_game() -> bool:
 func load_game() -> bool:
 	_cancel_dragged_facility(true)
 	_clear_selection_preview()
+	_hide_facility_info()
 	if not save_manager:
 		return false
 	var loaded := save_manager.load_game(city_state, grid_manager, facility_library)
 	if loaded:
 		if grid_display:
 			_grid_display_call("refresh_all")
-		var forecast := _update_forecast()
+		var forecast_range := _update_forecast()
 		if ui_manager:
 			ui_manager.show_rain_report({})
-		_show_status("Save loaded. Upcoming rain intensity: %d. Continue defending the city." % forecast)
+		_show_status("Save loaded. Rain forecast: %s. Continue defending the city." % _format_forecast_range(forecast_range))
 	return loaded
 
 func _on_facility_placed(_facility, _origin: Vector2i) -> void:
@@ -287,6 +312,91 @@ func _on_grid_cell_clicked(position: Vector2i) -> void:
 		return
 	_show_status("Select a facility to place or click an existing one to move it.")
 
+func _on_grid_cell_hovered(position: Vector2i) -> void:
+	if not game_active:
+		return
+	if grid_manager == null:
+		return
+	var facility := grid_manager.get_facility_at(position)
+	if facility:
+		_show_facility_info(facility)
+	else:
+		_hide_facility_info()
+
+func _on_grid_cell_hover_exited(position: Vector2i) -> void:
+	if hovered_facility == null:
+		return
+	if grid_manager == null:
+		_hide_facility_info()
+		return
+	var facility := grid_manager.get_facility_at(position)
+	if facility == null or facility == hovered_facility:
+		_hide_facility_info()
+
+func _show_facility_info(facility: Facility) -> void:
+	if facility == null:
+		return
+	hovered_facility = facility
+	hovered_sell_price = _calculate_sell_price(facility)
+	if facility_info_panel:
+		facility_info_panel.visible = true
+	if facility_info_title:
+		facility_info_title.text = "%s (Lv %d)" % [facility.name, facility.level]
+	if facility_info_details:
+		var lines: Array[String] = []
+		if facility.description != "":
+			lines.append(facility.description)
+			lines.append("")
+		lines.append("[b]Resilience:[/b] %d" % facility.resilience)
+		lines.append("[b]Level:[/b] %d" % facility.level)
+		facility_info_details.bbcode_text = "\n".join(lines)
+	if facility_info_sell_button:
+		facility_info_sell_button.text = "Sell (💰%d)" % hovered_sell_price
+		facility_info_sell_button.disabled = hovered_sell_price <= 0
+
+func _hide_facility_info() -> void:
+	hovered_facility = null
+	hovered_sell_price = 0
+	if facility_info_panel:
+		facility_info_panel.visible = false
+
+func _calculate_sell_price(facility: Facility) -> int:
+	if facility == null:
+		return 0
+	return max(1, int(round(facility.cost * 0.6)))
+
+func _on_facility_sell_pressed() -> void:
+	if not game_active:
+		return
+	if hovered_facility == null:
+		return
+	var facility := hovered_facility
+	var sell_price := hovered_sell_price
+	if sell_price <= 0:
+		return
+	if grid_manager:
+		grid_manager.remove_facility(facility)
+	if city_state:
+		city_state.add_money(sell_price)
+	_hide_facility_info()
+	if grid_display:
+		_grid_display_call("refresh_all")
+	_show_status("Sold %s (Lv %d) for %d funds." % [facility.name, facility.level, sell_price])
+
+func _on_grid_facility_removed(facility: Facility) -> void:
+	if facility == hovered_facility:
+		_hide_facility_info()
+
+func _on_grid_facility_moved(facility: Facility, _new_origin: Vector2i, _previous_origin: Vector2i) -> void:
+	if facility == hovered_facility:
+		_show_facility_info(facility)
+
+func _on_grid_facility_merged(facility: Facility, absorbed: Facility) -> void:
+	if hovered_facility == absorbed:
+		_hide_facility_info()
+	elif hovered_facility == facility:
+		_show_facility_info(facility)
+
 func _input(event: InputEvent) -> void:
 	if not game_active:
 		return
@@ -337,11 +447,12 @@ func _on_next_round_pressed() -> void:
 	if not endless_mode and city_state.round_number > VICTORY_ROUND_TARGET:
 		_handle_victory(report)
 		return
-	var forecast := _update_forecast()
+	_update_forecast()
 	var intensity := int(report.get("intensity", 0))
-	var defense := int(report.get("defense", 0))
+	var resilience_value := int(report.get("resilience", 0))
 	var damage := int(report.get("damage", 0))
-	_show_status("Rain %d vs Defense %d -> Damage %d. Next rain intensity: %d." % [intensity, defense, damage, forecast])
+	var income := int(report.get("income", 0))
+	_show_status("Rain %d vs Resilience %d → Damage %d. Earned 💰%d." % [intensity, resilience_value, damage, income])
 func _on_city_stats_changed() -> void:
 	_update_button_state()
 
@@ -355,9 +466,16 @@ func _update_button_state() -> void:
 		disabled = true
 	next_round_button.disabled = disabled
 
-func _update_forecast() -> int:
+func _format_forecast_range(range: Dictionary) -> String:
+	var min_value := int(range.get("min", 0))
+	var max_value := int(range.get("max", 0))
+	if min_value == 0 and max_value == 0:
+		return "?"
+	return "%d - %d" % [min_value, max_value]
+
+func _update_forecast() -> Dictionary:
 	if rain_system == null or city_state == null:
-		return 0
+		return {}
 	var forecast := rain_system.prepare_forecast(city_state.round_number)
 	if ui_manager:
 		ui_manager.show_rain_forecast(forecast)
@@ -375,6 +493,7 @@ func _ensure_node(path: NodePath, script_type) -> Node:
 func _show_start_menu() -> void:
 	_cancel_dragged_facility(true)
 	_clear_selection_preview()
+	_hide_facility_info()
 	game_active = false
 	endless_mode = false
 	if start_menu:
@@ -428,6 +547,7 @@ func _handle_victory(_report: Dictionary) -> void:
 	endless_mode = false
 	selected_offer_index = -1
 	_clear_selection_preview()
+	_hide_facility_info()
 	_shop_display_call("clear_selection")
 	var completed_rounds: int = 0
 	if city_state:
@@ -446,8 +566,8 @@ func _on_victory_endless_pressed() -> void:
 	endless_mode = true
 	game_active = true
 	_hide_victory_menu()
-	var forecast := _update_forecast()
-	_show_status("Endless mode engaged. Next rain intensity: %d." % forecast)
+	var forecast_range := _update_forecast()
+	_show_status("Endless mode engaged. Rain forecast: %s." % _format_forecast_range(forecast_range))
 	_update_button_state()
 
 func _connect_button(button: Button, method_name: String) -> void:

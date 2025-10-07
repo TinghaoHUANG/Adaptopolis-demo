@@ -87,7 +87,7 @@ func _format_offer_summary(facility: Facility) -> String:
 	if facility.id == "green_roof":
 		icon = "🏡"
 	var lines: Array[String] = []
-	lines.append("%s %s" % [icon, facility.name])
+	lines.append("%s %s (Lv %d)" % [icon, facility.name, facility.level])
 	lines.append("💰 %d    🛡️ %d" % [facility.cost, facility.resilience])
 	if facility.special_rule != "":
 		lines.append("📎 %s" % facility.special_rule)
@@ -95,7 +95,7 @@ func _format_offer_summary(facility: Facility) -> String:
 
 func _build_detail_text(facility: Facility) -> String:
 	var parts: Array[String] = []
-	parts.append(facility.name)
+	parts.append("%s (Lv %d)" % [facility.name, facility.level])
 	parts.append("Cost: %d" % facility.cost)
 	parts.append("Resilience: %d" % facility.resilience)
 	if facility.description != "":

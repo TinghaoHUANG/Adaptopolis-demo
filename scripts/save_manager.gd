@@ -15,7 +15,8 @@ func save_game(city_state: CityState, grid_manager: GridManager) -> bool:
     var data: Dictionary = {
         "city": city_state.get_snapshot(),
         "grid": grid_manager.serialize_state(),
-        "buildings": _vectors_to_raw(grid_manager.get_building_positions())
+        "buildings": _vectors_to_raw(grid_manager.get_building_positions()),
+        "water": _vectors_to_raw(grid_manager.get_water_positions())
     }
     return _write_json(save_path, data)
 
@@ -38,8 +39,10 @@ func load_game(city_state: CityState, grid_manager: GridManager, library: Facili
     city_state.emit_signal("stats_changed")
     var buildings_raw: Array = parsed.get("buildings", [])
     var building_positions: Array[Vector2i] = _raw_to_vectors(buildings_raw)
+    var water_raw: Array = parsed.get("water", [])
+    var water_positions: Array[Vector2i] = _raw_to_vectors(water_raw)
     var grid_data: Array = parsed.get("grid", [])
-    grid_manager.load_state(grid_data, library, building_positions)
+    grid_manager.load_state(grid_data, library, building_positions, water_positions)
     return true
 
 func delete_save() -> void:
@@ -67,5 +70,6 @@ func _raw_to_vectors(raw: Array) -> Array[Vector2i]:
         if typeof(entry) == TYPE_ARRAY and entry.size() >= 2:
             vectors.append(Vector2i(entry[0], entry[1]))
     return vectors
+
 
 

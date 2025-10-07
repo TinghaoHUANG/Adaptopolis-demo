@@ -6,7 +6,8 @@
     "cost": 5,
     "resilience": 2,
     "shape": [[true, true]],
-    "description": "Absorbs stormwater and reduces runoff."
+    "description": "Absorbs stormwater and reduces runoff.",
+    "unlock_round": 1
   },
   {
     "id": "flood_wall",
@@ -15,7 +16,8 @@
     "cost": 12,
     "resilience": 5,
     "shape": [[true, true, true]],
-    "description": "A strong but expensive flood defense."
+    "description": "A strong but expensive flood resilience.",
+    "unlock_round": 1
   },
   {
     "id": "green_roof",
@@ -24,7 +26,8 @@
     "cost": 6,
     "resilience": 2,
     "shape": [[true]],
-    "special_rule": "Can be placed on building tiles."
+    "special_rule": "Can be placed on building tiles.",
+    "unlock_round": 1
   },
   {
     "id": "retention_pond",
@@ -33,6 +36,60 @@
     "cost": 10,
     "resilience": 4,
     "shape": [[true, true], [true, true]],
-    "description": "Stores excess rainfall to prevent flooding."
+    "description": "Stores excess rainfall to prevent flooding.",
+    "unlock_round": 1
+  },
+  {
+    "id": "permeable_pavement",
+    "name": "Permeable Pavement",
+    "type": "grey",
+    "cost": 11,
+    "resilience": 5,
+    "shape": [[false, true, false], [true, true, true], [false, true, false]],
+    "description": "Increases infiltration and reduces peak runoff.",
+    "special_rule": "Cross shape. Pairs well with linear conveyance.",
+    "unlock_round": 5
+  },
+  {
+    "id": "infiltration_trench",
+    "name": "Infiltration Trench",
+    "type": "green",
+    "cost": 8,
+    "resilience": 3,
+    "shape": [[true, false], [true, false], [true, true]],
+    "description": "Guides runoff into permeable subsoils.",
+    "special_rule": "L-shape suits edges and corners.",
+    "unlock_round": 4
+  },
+  {
+    "id": "bio_swale",
+    "name": "Bio-swale",
+    "type": "green",
+    "cost": 7,
+    "resilience": 3,
+    "shape": [[true, true, true, true]],
+    "description": "Linear capture and filtration for narrow corridors.",
+    "unlock_round": 3
+  },
+  {
+    "id": "tree_trench",
+    "name": "Tree Trench",
+    "type": "green",
+    "cost": 9,
+    "resilience": 4,
+    "shape": [[false, true, false], [true, true, true], [false, false, false]],
+    "description": "Street trees linked with subsurface trenches.",
+    "unlock_round": 6
+  },
+  {
+    "id": "detention_basin",
+    "name": "Detention Basin",
+    "type": "grey",
+    "cost": 13,
+    "resilience": 6,
+    "shape": [[true, true, true], [true, false, true], [true, true, true]],
+    "description": "Temporarily stores stormwater to flatten peaks.",
+    "special_rule": "Hollow ring. Space-intensive but powerful.",
+    "unlock_round": 8
   }
 ]

@@ -19,10 +19,14 @@ signal cell_hover_exited(position: Vector2i)
 @export var cell_size: Vector2 = Vector2(64, 64)
 @export var empty_color: Color = Color(0.20, 0.22, 0.26)
 @export var building_color: Color = Color(0.35, 0.37, 0.45)
+@export var water_color: Color = Color(0.18, 0.32, 0.55)
 @export var green_color: Color = Color(0.25, 0.50, 0.35)
 @export var grey_color: Color = Color(0.40, 0.42, 0.50)
 @export var preview_valid_color: Color = Color(0.40, 0.70, 0.45)
 @export var preview_invalid_color: Color = Color(0.70, 0.40, 0.40)
+@export var ground_textures: Array[Texture2D] = []
+@export var building_texture: Texture2D
+@export var water_texture: Texture2D
 @export var empty_icon: String = "⬜"
 
 var grid_manager: GridManager = null
@@ -76,13 +80,19 @@ func refresh_all() -> void:
 			var pos: Vector2i = Vector2i(x, y)
 			var facility: Facility = grid_manager.get_facility_at(pos)
 			var cell := grid_manager.get_cell(pos)
+			var base_texture := _get_ground_texture(pos)
 			if facility:
-				var color: Color = green_color if facility.type == "green" else grey_color
-				_set_cell_visual(pos, _format_facility_label(facility), color)
+				var label := _format_facility_label(facility)
+				_set_cell_visual(pos, label, base_texture, empty_color, false)
+				var button: Button = cells.get(pos)
+				if button:
+					button.self_modulate = Color.WHITE
+			elif cell and cell.is_water:
+				_set_cell_visual(pos, "", water_texture, water_color, true)
 			elif cell and cell.is_building:
-				_set_cell_visual(pos, "🏢", building_color)
+				_set_cell_visual(pos, "", building_texture, building_color, true)
 			else:
-				_set_cell_visual(pos, "", empty_color)
+				_set_cell_visual(pos, "", base_texture, empty_color, false)
 
 func clear_preview() -> void:
 	for pos in preview_cells:
@@ -104,43 +114,56 @@ func _rebuild_cells() -> void:
 			button.flat = true
 			button.toggle_mode = false
 			button.custom_minimum_size = cell_size
-			button.text = empty_icon
+			button.text = ""
 			button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			add_child(button)
 			var pos := Vector2i(x, y)
 			cells[pos] = button
-			_apply_button_color(button, empty_color)
+			button.expand_icon = true
+			_apply_button_style(button, _get_ground_texture(pos), empty_color)
 			button.self_modulate = Color.WHITE
 			button.connect("pressed", Callable(self, "_on_cell_pressed").bind(pos))
 			button.connect("mouse_entered", Callable(self, "_on_cell_mouse_entered").bind(pos))
 			button.connect("mouse_exited", Callable(self, "_on_cell_mouse_exited").bind(pos))
 
-func _apply_button_color(button: Button, color: Color) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = color
-	normal.set_border_width_all(1)
-	normal.border_color = color.darkened(0.35)
-	normal.set_corner_radius_all(6)
-	var hover := normal.duplicate()
-	hover.bg_color = color.lightened(0.12)
-	var pressed := normal.duplicate()
-	pressed.bg_color = color.darkened(0.15)
-	button.add_theme_stylebox_override("normal", normal)
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_stylebox_override("focus", normal)
+func _apply_button_style(button: Button, texture: Texture2D, color: Color) -> void:
+	var normal_box: StyleBoxFlat = StyleBoxFlat.new()
+	normal_box.bg_color = color
+	normal_box.set_border_width_all(1)
+	normal_box.border_color = color.darkened(0.35)
+	normal_box.set_corner_radius_all(6)
+	var hover_box: StyleBoxFlat = normal_box.duplicate()
+	hover_box.bg_color = color.lightened(0.12)
+	var pressed_box: StyleBoxFlat = normal_box.duplicate()
+	pressed_box.bg_color = color.darkened(0.15)
+	button.add_theme_stylebox_override("normal", normal_box)
+	button.add_theme_stylebox_override("hover", hover_box)
+	button.add_theme_stylebox_override("pressed", pressed_box)
+	button.add_theme_stylebox_override("focus", hover_box)
+	button.icon = texture
+	button.expand_icon = texture != null
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_font_size_override("font_size", 20)
 
-func _set_cell_visual(pos: Vector2i, label: String, color: Color) -> void:
+func _get_ground_texture(pos: Vector2i) -> Texture2D:
+	if ground_textures.is_empty():
+		return null
+	var index: int = abs((pos.x + pos.y) % ground_textures.size())
+	return ground_textures[index]
+
+func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback_color: Color, disabled: bool) -> void:
 	var button: Button = cells.get(pos)
 	if button == null:
 		return
-	var display_text := label
-	if display_text.is_empty():
-		display_text = empty_icon
-	button.text = display_text
-	_apply_button_color(button, color)
+	button.disabled = disabled
+	if label.is_empty():
+		button.text = ""
+	else:
+		button.text = label
+	if label.is_empty() and texture == null:
+		button.text = empty_icon
+	_apply_button_style(button, texture, fallback_color)
+	button.mouse_default_cursor_shape = Control.CURSOR_FORBIDDEN if disabled else Control.CURSOR_POINTING_HAND
 	if not preview_cells.has(pos):
 		button.self_modulate = Color.WHITE
 

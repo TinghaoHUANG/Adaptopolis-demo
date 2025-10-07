@@ -38,25 +38,31 @@ func simulate_round(city: CityState) -> Dictionary:
 	else:
 		intensity = calculate_intensity(city.round_number)
 	last_intensity = intensity
-	var total_defense: int = city.get_total_resilience()
-	var damage: int = max(intensity - total_defense, 0)
+	var total_resilience: int = city.get_total_resilience()
+	var damage: int = max(intensity - total_resilience, 0)
 	city.apply_damage(damage)
 	return {
 		"intensity": intensity,
-		"defense": total_defense,
+		"resilience": total_resilience,
 		"damage": damage
 	}
 
-
-
-func prepare_forecast(round_number: int) -> int:
+func prepare_forecast(round_number: int) -> Dictionary:
 	if has_cached_forecast and cached_round == round_number:
-		return cached_intensity
+		return get_forecast_range(round_number)
 	cached_intensity = calculate_intensity(round_number)
 	cached_round = round_number
 	has_cached_forecast = true
 	last_intensity = cached_intensity
-	return cached_intensity
+	return get_forecast_range(round_number)
+
+func get_forecast_range(round_number: int) -> Dictionary:
+	var min_value := base_min + round_number * per_round_increase
+	var max_value := base_max + round_number * per_round_increase
+	return {
+		"min": min_value,
+		"max": max_value
+	}
 
 func get_forecast() -> int:
 	return cached_intensity if has_cached_forecast else 0

@@ -22,6 +22,7 @@ class GridCell:
 	var occupied: bool = false
 	var facility_ref: Facility = null
 	var is_building: bool = false
+	var is_water: bool = false
 
 	func _init(pos: Vector2i) -> void:
 		position = pos
@@ -31,6 +32,7 @@ var facility_cells: Dictionary = {} # maps Facility -> Array[Vector2i]
 var facility_origins: Dictionary = {}
 var city_state: CityState = null
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var water_positions: Array[Vector2i] = []
 
 func _ready() -> void:
 	initialize()
@@ -48,6 +50,7 @@ func initialize(seed_value: int = 0) -> void:
 
 func clear(generate_buildings: bool = true) -> void:
 	_create_grid()
+	water_positions.clear()
 	if generate_buildings:
 		_generate_buildings()
 	facility_cells.clear()
@@ -79,11 +82,29 @@ func _generate_buildings() -> void:
 		cell.occupied = true
 		cell.is_building = true
 
+func _generate_water_bodies() -> void:
+	var desired_count: int = rng.randi_range(3, 4)
+	var attempts: int = 0
+	water_positions.clear()
+	while water_positions.size() < desired_count and attempts < 64:
+		attempts += 1
+		var pos := Vector2i(rng.randi_range(0, GRID_WIDTH - 1), rng.randi_range(0, GRID_HEIGHT - 1))
+		if water_positions.has(pos):
+			continue
+		var cell := get_cell(pos)
+		if cell == null:
+			continue
+		if cell.is_building or cell.is_water:
+			continue
+		cell.is_water = true
+		cell.occupied = true
+		water_positions.append(pos)
+
 func apply_buildings(positions: Array) -> void:
 	for row in grid:
 		for cell: GridCell in row:
 			cell.is_building = false
-			if cell.facility_ref == null:
+			if cell.facility_ref == null and not cell.is_water:
 				cell.occupied = false
 	for entry in positions:
 		var pos: Vector2i = _to_vector2i(entry)
@@ -94,12 +115,32 @@ func apply_buildings(positions: Array) -> void:
 		if cell.facility_ref == null:
 			cell.occupied = true
 
+func apply_water(positions: Array) -> void:
+	for row in grid:
+		for cell: GridCell in row:
+			cell.is_water = false
+			if cell.facility_ref == null and not cell.is_building:
+				cell.occupied = false
+	for entry in positions:
+		var pos: Vector2i = _to_vector2i(entry)
+		var cell: GridCell = get_cell(pos)
+		if cell == null:
+			continue
+		cell.is_water = true
+		if cell.facility_ref == null:
+			cell.occupied = true
+	water_positions.clear()
+	for entry in positions:
+		water_positions.append(_to_vector2i(entry))
+
 func can_place_facility(facility: Facility, origin: Vector2i) -> bool:
 	var footprint: Array[Vector2i] = facility.get_footprint()
 	for offset in footprint:
 		var target: Vector2i = origin + offset
 		var cell: GridCell = get_cell(target)
 		if cell == null:
+			return false
+		if cell.is_water:
 			return false
 		if cell.is_building and facility.id == "green_roof":
 			continue
@@ -151,16 +192,14 @@ func _resolve_merges(facility: Facility) -> void:
 	for neighbor in neighbors:
 		if neighbor == facility:
 			continue
-		if neighbor.id != facility.id:
-			continue
-		if neighbor.level != facility.level:
+		if not facility.can_merge_with(neighbor):
 			continue
 		remove_facility(neighbor)
-		facility.merge_with(neighbor)
-		_set_facility_footprint(facility)
-		if city_state:
-			city_state.emit_signal("stats_changed")
-		emit_signal("facility_merged", facility, neighbor)
+		if facility.merge_with(neighbor):
+			_set_facility_footprint(facility)
+			if city_state:
+				city_state.emit_signal("stats_changed")
+			emit_signal("facility_merged", facility, neighbor)
 
 func remove_facility(facility: Facility) -> void:
 	if not facility_cells.has(facility):
@@ -181,7 +220,7 @@ func _clear_facility_cells(facility: Facility) -> void:
 		if cell == null:
 			continue
 		cell.facility_ref = null
-		cell.occupied = cell.is_building
+		cell.occupied = cell.is_building or cell.is_water
 	facility_cells[facility].clear()
 
 func get_cell(position: Vector2i) -> GridCell:
@@ -239,12 +278,16 @@ func serialize_state() -> Array:
 		})
 	return snapshot
 
-func load_state(data: Array, library: FacilityLibrary, building_positions: Array = []) -> void:
+func load_state(data: Array, library: FacilityLibrary, building_positions: Array = [], water_positions_override: Array = []) -> void:
 	clear(false)
 	if building_positions.is_empty():
 		_generate_buildings()
 	else:
 		apply_buildings(building_positions)
+	if water_positions_override.is_empty():
+		_generate_water_bodies()
+	else:
+		apply_water(water_positions_override)
 	if data == null:
 		return
 	for entry in data:
@@ -256,7 +299,8 @@ func load_state(data: Array, library: FacilityLibrary, building_positions: Array
 		var facility: Facility = library.create_facility(id)
 		if facility == null:
 			continue
-		facility.level = entry.get("level", 1)
+		var target_level: int = entry.get("level", 1)
+		facility.upgrade_to_level(target_level)
 		var origin_array: Array = entry.get("origin", [0, 0])
 		var origin: Vector2i = Vector2i(origin_array[0], origin_array[1])
 		place_facility(facility, origin)
@@ -292,3 +336,11 @@ func _set_facility_footprint(facility: Facility) -> void:
 		cell.occupied = true
 		cell.facility_ref = facility
 		facility_cells[facility].append(pos)
+
+func get_water_positions() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for row in grid:
+		for cell: GridCell in row:
+			if cell.is_water:
+				result.append(cell.position)
+	return result
