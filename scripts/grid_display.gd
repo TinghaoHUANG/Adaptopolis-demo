@@ -29,6 +29,13 @@ signal cell_hover_exited(position: Vector2i)
 @export var water_texture: Texture2D
 @export var empty_icon: String = "⬜"
 
+const DEFAULT_GROUND_TEXTURES: Array[Texture2D] = [
+	preload("res://icons/ground/ground_1.png"),
+	preload("res://icons/ground/ground_2.png")
+]
+const DEFAULT_BUILDING_TEXTURE: Texture2D = preload("res://icons/ground/building_1.png")
+const DEFAULT_WATER_TEXTURE: Texture2D = preload("res://icons/ground/water_1.png")
+
 var grid_manager: GridManager = null
 var preview_facility: Facility = null
 var hover_origin: Vector2i = Vector2i(-1, -1)
@@ -40,7 +47,9 @@ func _ready() -> void:
 	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_ensure_default_textures()
 	_rebuild_cells()
+	refresh_all()
 	if not grid_manager_path.is_empty():
 		var node: GridManager = get_node_or_null(grid_manager_path) as GridManager
 		if node:
@@ -126,22 +135,33 @@ func _rebuild_cells() -> void:
 			button.connect("mouse_entered", Callable(self, "_on_cell_mouse_entered").bind(pos))
 			button.connect("mouse_exited", Callable(self, "_on_cell_mouse_exited").bind(pos))
 
+func _ensure_default_textures() -> void:
+	if ground_textures.is_empty():
+		ground_textures = DEFAULT_GROUND_TEXTURES.duplicate()
+	if building_texture == null:
+		building_texture = DEFAULT_BUILDING_TEXTURE
+	if water_texture == null:
+		water_texture = DEFAULT_WATER_TEXTURE
+
 func _apply_button_style(button: Button, texture: Texture2D, color: Color) -> void:
+	var base_color := color
 	var normal_box: StyleBoxFlat = StyleBoxFlat.new()
-	normal_box.bg_color = color
+	normal_box.bg_color = base_color
 	normal_box.set_border_width_all(1)
-	normal_box.border_color = color.darkened(0.35)
+	normal_box.border_color = base_color.darkened(0.35)
 	normal_box.set_corner_radius_all(6)
 	var hover_box: StyleBoxFlat = normal_box.duplicate()
-	hover_box.bg_color = color.lightened(0.12)
+	hover_box.bg_color = base_color.lightened(0.12)
 	var pressed_box: StyleBoxFlat = normal_box.duplicate()
-	pressed_box.bg_color = color.darkened(0.15)
+	pressed_box.bg_color = base_color.darkened(0.15)
 	button.add_theme_stylebox_override("normal", normal_box)
 	button.add_theme_stylebox_override("hover", hover_box)
 	button.add_theme_stylebox_override("pressed", pressed_box)
 	button.add_theme_stylebox_override("focus", hover_box)
 	button.icon = texture
 	button.expand_icon = texture != null
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.icon_vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_font_size_override("font_size", 20)
 
