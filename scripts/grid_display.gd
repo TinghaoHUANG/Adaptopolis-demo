@@ -35,6 +35,22 @@ var hover_origin: Vector2i = Vector2i(-1, -1)
 var cells: Dictionary = {}
 var preview_cells: Array[Vector2i] = []
 
+const LEVEL2_HIGHLIGHT: Color = Color(0.64, 0.45, 0.93, 1.0)
+const LEVEL3_HIGHLIGHT: Color = Color(0.96, 0.80, 0.30, 1.0)
+const LEVEL_BORDER_WIDTH: int = 3
+
+const FACILITY_ICONS := {
+	"green_roof": preload("res://icons/facilities/greenroof_1.png"),
+	"rain_garden": preload("res://icons/facilities/raingarden_1.png")
+}
+
+const RETENTION_POND_ICONS := {
+	Vector2i(0, 0): preload("res://icons/facilities/retentionpond_1_upperleft.png"),
+	Vector2i(1, 0): preload("res://icons/facilities/retentionpond_1_upperright.png"),
+	Vector2i(0, 1): preload("res://icons/facilities/retentionpond_1_lowerleft.png"),
+	Vector2i(1, 1): preload("res://icons/facilities/retentionpond_1_lowerright.png")
+}
+
 func _ready() -> void:
 	columns = grid_columns
 	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -82,8 +98,11 @@ func refresh_all() -> void:
 			var cell := grid_manager.get_cell(pos)
 			var base_texture := _get_ground_texture(pos)
 			if facility:
-				var label := _format_facility_label(facility)
-				_set_cell_visual(pos, label, base_texture, empty_color, false)
+				var icon_texture := _get_facility_icon(facility, pos)
+				var label := "" if icon_texture else _format_facility_label(facility)
+				var highlight_color := _get_level_highlight(facility.level)
+				var display_texture := icon_texture if icon_texture else base_texture
+				_set_cell_visual(pos, label, display_texture, empty_color, false, highlight_color)
 				var button: Button = cells.get(pos)
 				if button:
 					button.self_modulate = Color.WHITE
@@ -133,11 +152,16 @@ func _rebuild_cells() -> void:
 			button.connect("mouse_entered", Callable(self, "_on_cell_mouse_entered").bind(pos))
 			button.connect("mouse_exited", Callable(self, "_on_cell_mouse_exited").bind(pos))
 
-func _apply_button_style(button: Button, texture: Texture2D, color: Color) -> void:
+func _apply_button_style(button: Button, texture: Texture2D, color: Color, highlight_color = null) -> void:
 	var normal_box: StyleBoxFlat = StyleBoxFlat.new()
 	normal_box.bg_color = color
-	normal_box.set_border_width_all(1)
-	normal_box.border_color = color.darkened(0.35)
+	var border_width := 1
+	var border_color := color.darkened(0.35)
+	if highlight_color != null:
+		border_width = LEVEL_BORDER_WIDTH
+		border_color = highlight_color
+	normal_box.set_border_width_all(border_width)
+	normal_box.border_color = border_color
 	normal_box.set_corner_radius_all(6)
 	var hover_box: StyleBoxFlat = normal_box.duplicate()
 	hover_box.bg_color = color.lightened(0.12)
@@ -158,7 +182,7 @@ func _get_ground_texture(pos: Vector2i) -> Texture2D:
 	var index: int = abs((pos.x + pos.y) % ground_textures.size())
 	return ground_textures[index]
 
-func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback_color: Color, disabled: bool) -> void:
+func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback_color: Color, disabled: bool, highlight_color = null) -> void:
 	var button: Button = cells.get(pos)
 	if button == null:
 		return
@@ -170,17 +194,51 @@ func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback
 	if label.is_empty() and texture == null:
 		button.text = empty_icon
 	var icon_texture := texture if label.is_empty() else null
-	_apply_button_style(button, icon_texture, fallback_color)
+	_apply_button_style(button, icon_texture, fallback_color, highlight_color)
 	button.mouse_default_cursor_shape = Control.CURSOR_FORBIDDEN if disabled else Control.CURSOR_POINTING_HAND
 	if not preview_cells.has(pos):
 		button.self_modulate = Color.WHITE
+
+func _get_level_highlight(level: int):
+	if level <= 1:
+		return null
+	if level == 2:
+		return LEVEL2_HIGHLIGHT
+	return LEVEL3_HIGHLIGHT
+
+func _get_facility_icon(facility: Facility, grid_position: Vector2i) -> Texture2D:
+	if facility == null:
+		return null
+	match facility.id:
+		"green_roof":
+			return FACILITY_ICONS.get("green_roof")
+		"rain_garden":
+			return FACILITY_ICONS.get("rain_garden")
+		"retention_pond":
+			return _get_retention_pond_icon(facility, grid_position)
+		_:
+			return null
+
+func _get_retention_pond_icon(facility: Facility, grid_position: Vector2i) -> Texture2D:
+	if grid_manager == null:
+		return null
+	var origin := grid_manager.get_facility_origin(facility)
+	var offset := grid_position - origin
+	var footprint := facility.get_footprint()
+	if footprint.is_empty():
+		return null
+	var min_x := footprint[0].x
+	var min_y := footprint[0].y
+	for f_offset in footprint:
+		min_x = min(min_x, f_offset.x)
+		min_y = min(min_y, f_offset.y)
+	var normalized := Vector2i(offset.x - min_x, offset.y - min_y)
+	return RETENTION_POND_ICONS.get(normalized, null)
 
 func _format_facility_label(facility: Facility) -> String:
 	var icon: String = "🌱" if facility.type == "green" else "🏗️"
 	if facility.id == "green_roof":
 		icon = "🏡"
-	if facility.level > 1:
-		return "%s Lv%d" % [icon, facility.level]
 	return icon
 
 func _show_preview(origin: Vector2i) -> void:
