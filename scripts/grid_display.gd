@@ -37,7 +37,9 @@ var preview_cells: Array[Vector2i] = []
 
 const LEVEL2_HIGHLIGHT: Color = Color(0.64, 0.45, 0.93, 1.0)
 const LEVEL3_HIGHLIGHT: Color = Color(0.96, 0.80, 0.30, 1.0)
-const LEVEL_BORDER_WIDTH: int = 3
+const LEVEL_BORDER_WIDTH: int = 4
+const NO_HIGHLIGHT: Color = Color(0, 0, 0, 0)
+const HIGHLIGHT_PANEL_NAME := "HighlightOverlay"
 
 const FACILITY_ICONS := {
 	"green_roof": preload("res://icons/facilities/greenroof_1.png"),
@@ -148,20 +150,23 @@ func _rebuild_cells() -> void:
 			button.expand_icon = true
 			_apply_button_style(button, _get_ground_texture(pos), empty_color)
 			button.self_modulate = Color.WHITE
+			var highlight_panel := Panel.new()
+			highlight_panel.name = HIGHLIGHT_PANEL_NAME
+			highlight_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			highlight_panel.visible = false
+			highlight_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			highlight_panel.z_index = 1
+			highlight_panel.z_as_relative = false
+			button.add_child(highlight_panel)
 			button.connect("pressed", Callable(self, "_on_cell_pressed").bind(pos))
 			button.connect("mouse_entered", Callable(self, "_on_cell_mouse_entered").bind(pos))
 			button.connect("mouse_exited", Callable(self, "_on_cell_mouse_exited").bind(pos))
 
-func _apply_button_style(button: Button, texture: Texture2D, color: Color, highlight_color = null) -> void:
+func _apply_button_style(button: Button, texture: Texture2D, color: Color) -> void:
 	var normal_box: StyleBoxFlat = StyleBoxFlat.new()
 	normal_box.bg_color = color
-	var border_width := 1
-	var border_color := color.darkened(0.35)
-	if highlight_color != null:
-		border_width = LEVEL_BORDER_WIDTH
-		border_color = highlight_color
-	normal_box.set_border_width_all(border_width)
-	normal_box.border_color = border_color
+	normal_box.set_border_width_all(1)
+	normal_box.border_color = color.darkened(0.35)
 	normal_box.set_corner_radius_all(6)
 	var hover_box: StyleBoxFlat = normal_box.duplicate()
 	hover_box.bg_color = color.lightened(0.12)
@@ -182,7 +187,7 @@ func _get_ground_texture(pos: Vector2i) -> Texture2D:
 	var index: int = abs((pos.x + pos.y) % ground_textures.size())
 	return ground_textures[index]
 
-func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback_color: Color, disabled: bool, highlight_color = null) -> void:
+func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback_color: Color, disabled: bool, highlight_color: Color = NO_HIGHLIGHT) -> void:
 	var button: Button = cells.get(pos)
 	if button == null:
 		return
@@ -194,17 +199,42 @@ func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback
 	if label.is_empty() and texture == null:
 		button.text = empty_icon
 	var icon_texture := texture if label.is_empty() else null
-	_apply_button_style(button, icon_texture, fallback_color, highlight_color)
+	_apply_button_style(button, icon_texture, fallback_color)
+	_update_highlight(button, highlight_color)
 	button.mouse_default_cursor_shape = Control.CURSOR_FORBIDDEN if disabled else Control.CURSOR_POINTING_HAND
 	if not preview_cells.has(pos):
 		button.self_modulate = Color.WHITE
 
-func _get_level_highlight(level: int):
+func _get_level_highlight(level: int) -> Color:
 	if level <= 1:
-		return null
+		return NO_HIGHLIGHT
 	if level == 2:
 		return LEVEL2_HIGHLIGHT
 	return LEVEL3_HIGHLIGHT
+
+func _update_highlight(button: Button, highlight_color: Color) -> void:
+	var panel: Panel = button.get_node_or_null(HIGHLIGHT_PANEL_NAME)
+	if panel == null:
+		return
+	if highlight_color.a <= 0.0:
+		panel.visible = false
+		return
+	panel.visible = true
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.draw_center = false
+	style.set_border_width_all(LEVEL_BORDER_WIDTH)
+	style.border_color = highlight_color
+	style.set_corner_radius_all(8)
+	style.shadow_color = Color(highlight_color.r, highlight_color.g, highlight_color.b, 0.45)
+	style.shadow_offset = Vector2.ZERO
+	style.shadow_size = LEVEL_BORDER_WIDTH * 8
+	var expand := float(LEVEL_BORDER_WIDTH) * 0.75
+	style.expand_margin_left = expand
+	style.expand_margin_right = expand
+	style.expand_margin_top = expand
+	style.expand_margin_bottom = expand
+	panel.add_theme_stylebox_override("panel", style)
 
 func _get_facility_icon(facility: Facility, grid_position: Vector2i) -> Texture2D:
 	if facility == null:

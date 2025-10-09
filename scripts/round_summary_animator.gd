@@ -4,12 +4,12 @@ extends Control
 
 signal animation_finished
 
-const POPUP_INTERVAL := 0.3
+const POPUP_INTERVAL := 0.5
 const POPUP_FADE_IN := 0.2
-const POPUP_HOLD := 0.2
+const POPUP_HOLD := 0.8
 const POPUP_FADE_OUT := 0.2
 const SUMMARY_FADE := 0.2
-const SUMMARY_HOLD := 1.0
+const SUMMARY_HOLD := 1.5
 
 @export var popup_font_size: int = 26
 @export var summary_font_size: int = 34

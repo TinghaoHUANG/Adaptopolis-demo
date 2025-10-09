@@ -67,7 +67,7 @@ func _create_grid() -> void:
 		grid.append(row)
 
 func _generate_buildings() -> void:
-	var building_count: int = rng.randi_range(2, 3)
+	var building_count: int = rng.randi_range(4, 5)
 	var occupied_positions: Array[Vector2i] = []
 	for i in range(building_count):
 		var attempt: int = 0
@@ -85,7 +85,7 @@ func _generate_buildings() -> void:
 		cell.is_building = true
 
 func _generate_water_bodies() -> void:
-	var desired_count: int = rng.randi_range(3, 4)
+	var desired_count: int = rng.randi_range(1, 3)
 	var attempts: int = 0
 	water_positions.clear()
 	while water_positions.size() < desired_count and attempts < 64:
@@ -143,7 +143,10 @@ func _validate_placement(facility: Facility, origin: Vector2i, allow_self_overla
 		if cell == null or cell.is_water:
 			return {"allowed": false, "merge_target": null}
 		var occupant: Facility = cell.facility_ref
-		var can_use_building: bool = cell.is_building and facility.id == "green_roof"
+		var on_building := cell.is_building
+		var can_use_building: bool = on_building and facility.id == "green_roof"
+		if facility.id == "green_roof" and not on_building:
+			return {"allowed": false, "merge_target": null}
 		if merge_target != null and occupant == null and not can_use_building:
 			return {"allowed": false, "merge_target": null}
 		if occupant != null:
@@ -159,7 +162,7 @@ func _validate_placement(facility: Facility, origin: Vector2i, allow_self_overla
 				return {"allowed": false, "merge_target": null}
 			continue
 		if cell.is_building:
-			if not can_use_building:
+			if facility.id != "green_roof":
 				return {"allowed": false, "merge_target": null}
 			continue
 		if cell.occupied:
