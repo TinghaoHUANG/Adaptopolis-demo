@@ -135,7 +135,7 @@ offset_right = 192.0
 offset_bottom = 192.0
 columns = 6
 script = ExtResource("4")
-ground_textures = [ExtResource("6"), ExtResource("7")]
+ground_textures = Array[Texture2D]([ExtResource("6"), ExtResource("7")])
 building_texture = ExtResource("8")
 water_texture = ExtResource("9")
 

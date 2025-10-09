@@ -70,10 +70,15 @@ var facility_info_panel: PanelContainer = null
 var facility_info_title: Label = null
 var facility_info_details: RichTextLabel = null
 var facility_info_sell_button: Button = null
+var round_summary_animator: RoundSummaryAnimator = null
 var hovered_facility: Facility = null
 var hovered_sell_price: int = 0
+var hover_info_delay: float = 1.0
+var hover_info_timer: Timer = null
+var pending_hover_facility: Facility = null
 var game_active: bool = false
 var endless_mode: bool = false
+var round_animation_active: bool = false
 const VICTORY_ROUND_TARGET := 20
 
 func _ready() -> void:
@@ -136,6 +141,19 @@ func _ready() -> void:
 	shop_manager.connect("offers_changed", Callable(self, "_on_offers_changed"))
 	shop_manager.connect("purchase_failed", Callable(self, "_on_purchase_failed"))
 
+	var ui_layer := get_node_or_null("UI") as CanvasLayer
+	if ui_layer and round_summary_animator == null:
+		round_summary_animator = RoundSummaryAnimator.new()
+		round_summary_animator.name = "RoundSummaryAnimator"
+		ui_layer.add_child(round_summary_animator)
+		if grid_display:
+			round_summary_animator.set_grid_display(grid_display)
+
+	hover_info_timer = Timer.new()
+	hover_info_timer.one_shot = true
+	add_child(hover_info_timer)
+	hover_info_timer.connect("timeout", Callable(self, "_on_hover_info_timeout"))
+
 	_show_start_menu()
 
 func start_new_game() -> void:
@@ -149,6 +167,9 @@ func start_new_game() -> void:
 	_hide_victory_menu()
 	city_state.reset()
 	grid_manager.clear()
+	if round_summary_animator:
+		round_summary_animator.reset()
+		round_animation_active = false
 	if grid_display:
 		grid_display.visible = true
 		_grid_display_call("refresh_all")
@@ -201,12 +222,16 @@ func load_game() -> bool:
 		return false
 	var loaded := save_manager.load_game(city_state, grid_manager, facility_library)
 	if loaded:
+		if round_summary_animator:
+			round_summary_animator.reset()
+			round_animation_active = false
 		if grid_display:
 			_grid_display_call("refresh_all")
 		var forecast_range := _update_forecast()
 		if ui_manager:
 			ui_manager.show_rain_report({})
 		_show_status("Save loaded. Rain forecast: %s. Continue defending the city." % _format_forecast_range(forecast_range))
+	_update_button_state()
 	return loaded
 
 func _on_facility_placed(_facility, _origin: Vector2i) -> void:
@@ -293,8 +318,42 @@ func _on_shop_refresh_requested() -> void:
 		_shop_display_call("clear_selection")
 	_show_status("Shop refreshed with new options.")
 
+func _cancel_hover_schedule() -> void:
+	if hover_info_timer:
+		hover_info_timer.stop()
+	pending_hover_facility = null
+
+func _schedule_facility_info(facility: Facility) -> void:
+	_cancel_hover_schedule()
+	if round_animation_active:
+		return
+	if facility == null:
+		_hide_facility_info()
+		return
+	if hovered_facility == facility and facility_info_panel and facility_info_panel.visible:
+		return
+	if hovered_facility != null and hovered_facility != facility:
+		_hide_facility_info()
+	pending_hover_facility = facility
+	if hover_info_delay <= 0.0:
+		_show_facility_info(facility)
+		return
+	if hover_info_timer:
+		hover_info_timer.start(hover_info_delay)
+
+func _on_hover_info_timeout() -> void:
+	var facility := pending_hover_facility
+	pending_hover_facility = null
+	if facility == null:
+		return
+	if grid_manager == null:
+		return
+	_show_facility_info(facility)
+
 func _on_grid_cell_clicked(position: Vector2i) -> void:
 	if not game_active:
+		return
+	if round_animation_active:
 		return
 	if _is_dragging():
 		_attempt_drag_drop(position)
@@ -318,12 +377,10 @@ func _on_grid_cell_hovered(position: Vector2i) -> void:
 	if grid_manager == null:
 		return
 	var facility := grid_manager.get_facility_at(position)
-	if facility:
-		_show_facility_info(facility)
-	else:
-		_hide_facility_info()
+	_schedule_facility_info(facility)
 
 func _on_grid_cell_hover_exited(position: Vector2i) -> void:
+	_cancel_hover_schedule()
 	if hovered_facility == null:
 		return
 	if grid_manager == null:
@@ -355,6 +412,7 @@ func _show_facility_info(facility: Facility) -> void:
 		facility_info_sell_button.disabled = hovered_sell_price <= 0
 
 func _hide_facility_info() -> void:
+	_cancel_hover_schedule()
 	hovered_facility = null
 	hovered_sell_price = 0
 	if facility_info_panel:
@@ -441,9 +499,17 @@ func _on_next_round_pressed() -> void:
 		return
 	if city_state and city_state.is_game_over():
 		return
+	if round_animation_active:
+		return
 	var report := simulate_round()
 	if grid_display:
 		_grid_display_call("refresh_all")
+	if round_summary_animator:
+		round_animation_active = true
+		_update_button_state()
+		await round_summary_animator.play_round_report(city_state.facilities.duplicate(), grid_manager, grid_display, report)
+		round_animation_active = false
+		_update_button_state()
 	if not endless_mode and city_state.round_number > VICTORY_ROUND_TARGET:
 		_handle_victory(report)
 		return
@@ -463,6 +529,8 @@ func _update_button_state() -> void:
 	if city_state and city_state.is_game_over():
 		disabled = true
 	if _is_dragging():
+		disabled = true
+	if round_animation_active:
 		disabled = true
 	next_round_button.disabled = disabled
 
@@ -582,7 +650,7 @@ func _is_dragging() -> bool:
 	return dragged_facility != null
 
 func _rotation_hint() -> String:
-	return "Right-click to rotate clockwise (顺时针), Shift + Right-click to rotate counter-clockwise (逆时针)."
+	return "Right-click to rotate clockwise (顺时针)."
 
 func _maybe_append_rotation_hint(message: String) -> String:
 	if not game_active:
@@ -598,7 +666,7 @@ func _maybe_append_rotation_hint(message: String) -> String:
 func _build_selection_message(facility: Facility) -> String:
 	if facility == null:
 		return "Select a facility before placing it on the grid."
-	return "Selected %s for %d funds. Right-click to rotate (Shift + Right-click for counter-clockwise). Click a grid tile to place." % [facility.name, facility.cost]
+	return "Selected %s for %d funds. Right-click to rotate. Stack identical facilities to upgrade. Click a grid tile to place." % [facility.name, facility.cost]
 
 func _clear_selection_preview() -> void:
 	selected_preview_facility = null
@@ -657,6 +725,8 @@ func _begin_facility_drag(facility: Facility) -> void:
 		return
 	if grid_manager == null:
 		return
+	_cancel_hover_schedule()
+	_hide_facility_info()
 	dragged_facility = facility
 	dragged_original_origin = grid_manager.get_facility_origin(facility)
 	grid_manager.remove_facility(facility)

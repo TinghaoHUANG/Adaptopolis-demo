@@ -48,11 +48,13 @@ func initialize(seed_value: int = 0) -> void:
 		rng.randomize()
 	clear()
 
-func clear(generate_buildings: bool = true) -> void:
+func clear(generate_buildings: bool = true, generate_water: bool = true) -> void:
 	_create_grid()
 	water_positions.clear()
 	if generate_buildings:
 		_generate_buildings()
+	if generate_water:
+		_generate_water_bodies()
 	facility_cells.clear()
 	facility_origins.clear()
 
@@ -133,73 +135,94 @@ func apply_water(positions: Array) -> void:
 	for entry in positions:
 		water_positions.append(_to_vector2i(entry))
 
-func can_place_facility(facility: Facility, origin: Vector2i) -> bool:
-	var footprint: Array[Vector2i] = facility.get_footprint()
-	for offset in footprint:
+func _validate_placement(facility: Facility, origin: Vector2i, allow_self_overlap: bool) -> Dictionary:
+	var merge_target: Facility = null
+	for offset in facility.get_footprint():
 		var target: Vector2i = origin + offset
 		var cell: GridCell = get_cell(target)
-		if cell == null:
-			return false
-		if cell.is_water:
-			return false
-		if cell.is_building and facility.id == "green_roof":
+		if cell == null or cell.is_water:
+			return {"allowed": false, "merge_target": null}
+		var occupant: Facility = cell.facility_ref
+		var can_use_building: bool = cell.is_building and facility.id == "green_roof"
+		if merge_target != null and occupant == null and not can_use_building:
+			return {"allowed": false, "merge_target": null}
+		if occupant != null:
+			if occupant == facility:
+				if allow_self_overlap:
+					continue
+				return {"allowed": false, "merge_target": null}
+			if not facility.can_merge_with(occupant):
+				return {"allowed": false, "merge_target": null}
+			if merge_target == null:
+				merge_target = occupant
+			elif merge_target != occupant:
+				return {"allowed": false, "merge_target": null}
+			continue
+		if cell.is_building:
+			if not can_use_building:
+				return {"allowed": false, "merge_target": null}
 			continue
 		if cell.occupied:
-			return false
-	return true
+			return {"allowed": false, "merge_target": null}
+	return {"allowed": true, "merge_target": merge_target}
+
+func can_place_facility(facility: Facility, origin: Vector2i) -> bool:
+	var result: Dictionary = _validate_placement(facility, origin, false)
+	return result.get("allowed", false)
 
 func can_relocate_facility(facility: Facility, origin: Vector2i) -> bool:
 	if facility == null:
 		return false
 	if not facility_cells.has(facility):
 		return false
-	var footprint: Array[Vector2i] = facility.get_footprint()
-	for offset in footprint:
-		var target: Vector2i = origin + offset
-		var cell: GridCell = get_cell(target)
-		if cell == null:
-			return false
-		if cell.is_building and facility.id != "green_roof":
-			return false
-		if cell.occupied and cell.facility_ref != facility:
-			return false
-	return true
+	var result: Dictionary = _validate_placement(facility, origin, true)
+	return result.get("allowed", false)
 
 func place_facility(facility: Facility, origin: Vector2i) -> bool:
-	if not can_place_facility(facility, origin):
+	var result: Dictionary = _validate_placement(facility, origin, false)
+	if not result.get("allowed", false):
 		return false
+	var merge_target: Facility = result.get("merge_target", null)
+	if merge_target:
+		remove_facility(merge_target)
 	facility_origins[facility] = origin
 	_set_facility_footprint(facility)
 	if city_state:
 		city_state.register_facility(facility)
 	emit_signal("facility_placed", facility, origin)
-	_resolve_merges(facility)
+	if merge_target and facility.merge_with(merge_target):
+		_set_facility_footprint(facility)
+		if city_state:
+			city_state.emit_signal("stats_changed")
+		emit_signal("facility_merged", facility, merge_target)
 	return true
 
 func move_facility(facility: Facility, origin: Vector2i) -> bool:
-	if not can_relocate_facility(facility, origin):
+	if facility == null:
 		return false
+	if not facility_cells.has(facility):
+		return false
+	var result: Dictionary = _validate_placement(facility, origin, true)
+	if not result.get("allowed", false):
+		return false
+	var merge_target: Facility = result.get("merge_target", null)
 	var previous_origin: Vector2i = facility_origins.get(facility, Vector2i.ZERO)
 	_clear_facility_cells(facility)
+	if merge_target and merge_target != facility:
+		remove_facility(merge_target)
 	facility_origins[facility] = origin
 	_set_facility_footprint(facility)
 	emit_signal("facility_moved", facility, origin, previous_origin)
-	_resolve_merges(facility)
+	if merge_target and merge_target != facility and facility.merge_with(merge_target):
+		_set_facility_footprint(facility)
+		if city_state:
+			city_state.emit_signal("stats_changed")
+		emit_signal("facility_merged", facility, merge_target)
 	return true
 
 func _resolve_merges(facility: Facility) -> void:
-	var neighbors: Array[Facility] = _get_neighbor_facilities(facility)
-	for neighbor in neighbors:
-		if neighbor == facility:
-			continue
-		if not facility.can_merge_with(neighbor):
-			continue
-		remove_facility(neighbor)
-		if facility.merge_with(neighbor):
-			_set_facility_footprint(facility)
-			if city_state:
-				city_state.emit_signal("stats_changed")
-			emit_signal("facility_merged", facility, neighbor)
+	# Adjacency-based merging has been disabled; stacking now handles all merge logic.
+	pass
 
 func remove_facility(facility: Facility) -> void:
 	if not facility_cells.has(facility):
@@ -240,7 +263,11 @@ func get_facility_origin(facility: Facility) -> Vector2i:
 	return facility_origins.get(facility, Vector2i.ZERO)
 
 func get_facility_cells(facility: Facility) -> Array[Vector2i]:
-	return facility_cells.get(facility, []).duplicate()
+	var source = facility_cells.get(facility, [])
+	var result: Array[Vector2i] = []
+	for pos in source:
+		result.append(pos)
+	return result
 
 func _get_neighbor_facilities(facility: Facility) -> Array[Facility]:
 	var neighbors: Array[Facility] = []
@@ -279,7 +306,7 @@ func serialize_state() -> Array:
 	return snapshot
 
 func load_state(data: Array, library: FacilityLibrary, building_positions: Array = [], water_positions_override: Array = []) -> void:
-	clear(false)
+	clear(false, false)
 	if building_positions.is_empty():
 		_generate_buildings()
 	else:
