@@ -73,13 +73,16 @@ var facility_info_sell_button: Button = null
 var round_summary_animator: RoundSummaryAnimator = null
 var hovered_facility: Facility = null
 var hovered_sell_price: int = 0
+var facility_info_hovered: bool = false
 var hover_info_delay: float = 1.0
 var hover_info_timer: Timer = null
 var pending_hover_facility: Facility = null
+var facility_info_hide_timer: Timer = null
 var game_active: bool = false
 var endless_mode: bool = false
 var round_animation_active: bool = false
 const VICTORY_ROUND_TARGET := 20
+const FACILITY_INFO_HIDE_DELAY := 0.12
 
 func _ready() -> void:
 	city_state = _ensure_node(city_state_path, CityState) as CityState
@@ -105,7 +108,17 @@ func _ready() -> void:
 	facility_info_title = get_node_or_null(facility_info_title_path) as Label
 	facility_info_details = get_node_or_null(facility_info_details_path) as RichTextLabel
 	facility_info_sell_button = get_node_or_null(facility_info_sell_button_path) as Button
+	if facility_info_panel:
+		facility_info_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+		facility_info_panel.connect("mouse_entered", Callable(self, "_on_facility_info_mouse_entered"))
+		facility_info_panel.connect("mouse_exited", Callable(self, "_on_facility_info_mouse_exited"))
 	_bind_controls()
+
+	facility_info_hide_timer = Timer.new()
+	facility_info_hide_timer.one_shot = true
+	facility_info_hide_timer.wait_time = FACILITY_INFO_HIDE_DELAY
+	facility_info_hide_timer.connect("timeout", Callable(self, "_on_facility_info_hide_timeout"))
+	add_child(facility_info_hide_timer)
 
 	grid_display = get_node_or_null(grid_display_path) as GridDisplay
 	if grid_display:
@@ -322,6 +335,8 @@ func _cancel_hover_schedule() -> void:
 	if hover_info_timer:
 		hover_info_timer.stop()
 	pending_hover_facility = null
+	if facility_info_hide_timer:
+		facility_info_hide_timer.stop()
 
 func _schedule_facility_info(facility: Facility) -> void:
 	_cancel_hover_schedule()
@@ -386,15 +401,21 @@ func _on_grid_cell_hover_exited(position: Vector2i) -> void:
 	if grid_manager == null:
 		_hide_facility_info()
 		return
-	var facility := grid_manager.get_facility_at(position)
-	if facility == null or facility == hovered_facility:
-		_hide_facility_info()
+	if facility_info_hovered:
+		return
+	if facility_info_panel and facility_info_panel.visible:
+		var panel_rect := facility_info_panel.get_global_rect()
+		if panel_rect.has_point(get_viewport().get_mouse_position()):
+			return
+	if facility_info_hide_timer:
+		facility_info_hide_timer.start()
 
 func _show_facility_info(facility: Facility) -> void:
 	if facility == null:
 		return
 	hovered_facility = facility
 	hovered_sell_price = _calculate_sell_price(facility)
+	_position_facility_info(facility)
 	if facility_info_panel:
 		facility_info_panel.visible = true
 	if facility_info_title:
@@ -415,8 +436,55 @@ func _hide_facility_info() -> void:
 	_cancel_hover_schedule()
 	hovered_facility = null
 	hovered_sell_price = 0
+	facility_info_hovered = false
+	if facility_info_hide_timer:
+		facility_info_hide_timer.stop()
 	if facility_info_panel:
 		facility_info_panel.visible = false
+
+func _on_facility_info_mouse_entered() -> void:
+	facility_info_hovered = true
+	if facility_info_hide_timer:
+		facility_info_hide_timer.stop()
+
+func _on_facility_info_mouse_exited() -> void:
+	facility_info_hovered = false
+	if facility_info_panel and facility_info_panel.visible:
+		var panel_rect := facility_info_panel.get_global_rect()
+		if panel_rect.has_point(get_viewport().get_mouse_position()):
+			return
+	if hovered_facility != null and facility_info_hide_timer:
+		facility_info_hide_timer.start()
+
+func _on_facility_info_hide_timeout() -> void:
+	if facility_info_hovered:
+		return
+	_hide_facility_info()
+
+func _position_facility_info(facility: Facility) -> void:
+	if facility_info_panel == null:
+		return
+	if grid_manager == null or grid_display == null:
+		return
+	var cells := grid_manager.get_facility_cells(facility)
+	if cells.is_empty():
+		cells.append(grid_manager.get_facility_origin(facility))
+	var center := Vector2.ZERO
+	for pos in cells:
+		center += grid_display.get_cell_center(pos)
+	center /= max(1, cells.size())
+	var panel_size := facility_info_panel.size
+	if panel_size == Vector2.ZERO:
+		panel_size = facility_info_panel.get_combined_minimum_size()
+	var offset := Vector2(panel_size.x * 0.5, panel_size.y + 12)
+	var target := center - offset
+	var viewport_rect := get_viewport().get_visible_rect()
+	var viewport_size := Vector2(viewport_rect.size.x, viewport_rect.size.y)
+	var clamped := Vector2(
+		clamp(target.x, 8.0, viewport_size.x - panel_size.x - 8.0),
+		clamp(target.y, 8.0, viewport_size.y - panel_size.y - 8.0)
+	)
+	facility_info_panel.global_position = clamped
 
 func _calculate_sell_price(facility: Facility) -> int:
 	if facility == null:
@@ -447,13 +515,13 @@ func _on_grid_facility_removed(facility: Facility) -> void:
 
 func _on_grid_facility_moved(facility: Facility, _new_origin: Vector2i, _previous_origin: Vector2i) -> void:
 	if facility == hovered_facility:
-		_show_facility_info(facility)
+		_position_facility_info(facility)
 
 func _on_grid_facility_merged(facility: Facility, absorbed: Facility) -> void:
 	if hovered_facility == absorbed:
 		_hide_facility_info()
 	elif hovered_facility == facility:
-		_show_facility_info(facility)
+		_position_facility_info(facility)
 
 func _input(event: InputEvent) -> void:
 	if not game_active:
@@ -465,9 +533,8 @@ func _input(event: InputEvent) -> void:
 		return
 	if mouse_event.button_index != MOUSE_BUTTON_RIGHT:
 		return
-	if _is_dragging():
-		return
-	if selected_offer_index < 0 or selected_preview_facility == null:
+	var rotating_drag := _is_dragging()
+	if selected_preview_facility == null:
 		return
 	if grid_display:
 		var rect := grid_display.get_global_rect()
@@ -475,6 +542,8 @@ func _input(event: InputEvent) -> void:
 			return
 	var clockwise := not mouse_event.shift_pressed
 	_rotate_preview(clockwise)
+	if rotating_drag:
+		dragged_facility = selected_preview_facility
 	get_viewport().set_input_as_handled()
 
 func _bind_controls() -> void:
@@ -692,7 +761,10 @@ func _rotate_preview(clockwise: bool) -> void:
 	else:
 		selected_preview_facility.shape = _rotate_shape_counterclockwise(shape)
 	_grid_display_call("set_preview_facility", [selected_preview_facility])
-	_show_status(_build_selection_message(selected_preview_facility))
+	if _is_dragging() and dragged_facility == selected_preview_facility:
+		_show_status("Adjusted %s orientation. Choose a new tile for its top-left corner." % selected_preview_facility.name)
+	else:
+		_show_status(_build_selection_message(selected_preview_facility))
 
 func _rotate_shape_clockwise(shape: Array) -> Array:
 	if shape.is_empty():
@@ -732,6 +804,7 @@ func _begin_facility_drag(facility: Facility) -> void:
 	grid_manager.remove_facility(facility)
 	if grid_display:
 		_grid_display_call("set_preview_facility", [facility])
+	selected_preview_facility = facility
 	_show_status("Repositioning %s. Choose a new tile for its top-left corner." % facility.name)
 	_update_button_state()
 
@@ -754,6 +827,7 @@ func _attempt_drag_drop(position: Vector2i) -> void:
 		return
 	dragged_facility = null
 	dragged_original_origin = Vector2i.ZERO
+	selected_preview_facility = null
 	if grid_display:
 		_grid_display_call("set_preview_facility", [null])
 		_grid_display_call("clear_preview")
@@ -774,6 +848,7 @@ func _cancel_dragged_facility(restore: bool = true, message: String = "") -> voi
 	if grid_display:
 		_grid_display_call("set_preview_facility", [null])
 		_grid_display_call("clear_preview")
+	selected_preview_facility = null
 	if not message.is_empty():
 		_show_status(message)
 	_update_button_state()

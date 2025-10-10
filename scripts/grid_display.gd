@@ -104,7 +104,7 @@ func refresh_all() -> void:
 				var label := "" if icon_texture else _format_facility_label(facility)
 				var highlight_color := _get_level_highlight(facility.level)
 				var display_texture := icon_texture if icon_texture else base_texture
-				_set_cell_visual(pos, label, display_texture, empty_color, false, highlight_color)
+				_set_cell_visual(pos, label, display_texture, empty_color, false, highlight_color, facility)
 				var button: Button = cells.get(pos)
 				if button:
 					button.self_modulate = Color.WHITE
@@ -187,7 +187,7 @@ func _get_ground_texture(pos: Vector2i) -> Texture2D:
 	var index: int = abs((pos.x + pos.y) % ground_textures.size())
 	return ground_textures[index]
 
-func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback_color: Color, disabled: bool, highlight_color: Color = NO_HIGHLIGHT) -> void:
+func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback_color: Color, disabled: bool, highlight_color: Color = NO_HIGHLIGHT, facility: Facility = null) -> void:
 	var button: Button = cells.get(pos)
 	if button == null:
 		return
@@ -200,7 +200,7 @@ func _set_cell_visual(pos: Vector2i, label: String, texture: Texture2D, fallback
 		button.text = empty_icon
 	var icon_texture := texture if label.is_empty() else null
 	_apply_button_style(button, icon_texture, fallback_color)
-	_update_highlight(button, highlight_color)
+	_update_highlight(button, highlight_color, facility, pos)
 	button.mouse_default_cursor_shape = Control.CURSOR_FORBIDDEN if disabled else Control.CURSOR_POINTING_HAND
 	if not preview_cells.has(pos):
 		button.self_modulate = Color.WHITE
@@ -212,18 +212,25 @@ func _get_level_highlight(level: int) -> Color:
 		return LEVEL2_HIGHLIGHT
 	return LEVEL3_HIGHLIGHT
 
-func _update_highlight(button: Button, highlight_color: Color) -> void:
+func _update_highlight(button: Button, highlight_color: Color, facility: Facility, grid_position: Vector2i) -> void:
 	var panel: Panel = button.get_node_or_null(HIGHLIGHT_PANEL_NAME)
 	if panel == null:
 		return
-	if highlight_color.a <= 0.0:
+	if highlight_color.a <= 0.0 or facility == null or grid_manager == null:
 		panel.visible = false
 		return
 	panel.visible = true
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0)
 	style.draw_center = false
-	style.set_border_width_all(LEVEL_BORDER_WIDTH)
+	var left_same := grid_manager.get_facility_at(grid_position + Vector2i.LEFT) == facility
+	var right_same := grid_manager.get_facility_at(grid_position + Vector2i.RIGHT) == facility
+	var up_same := grid_manager.get_facility_at(grid_position + Vector2i.UP) == facility
+	var down_same := grid_manager.get_facility_at(grid_position + Vector2i.DOWN) == facility
+	style.set_border_width(SIDE_LEFT, 0 if left_same else LEVEL_BORDER_WIDTH)
+	style.set_border_width(SIDE_RIGHT, 0 if right_same else LEVEL_BORDER_WIDTH)
+	style.set_border_width(SIDE_TOP, 0 if up_same else LEVEL_BORDER_WIDTH)
+	style.set_border_width(SIDE_BOTTOM, 0 if down_same else LEVEL_BORDER_WIDTH)
 	style.border_color = highlight_color
 	style.set_corner_radius_all(8)
 	style.shadow_color = Color(highlight_color.r, highlight_color.g, highlight_color.b, 0.45)
