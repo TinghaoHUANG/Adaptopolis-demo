@@ -14,19 +14,19 @@ signal facility_registered(facility: Facility)
 signal facility_unregistered(facility: Facility)
 
 @export var max_health: int = 20
-@export var starting_money: int = 30
+@export var starting_money: float = 30.0
 @export var base_income: int = 6
 @export var perfect_round_bonus: int = 3
 
 var health: int = max_health
-var money: int = starting_money
+var money: float = starting_money
 var round_number: int = 1
 var last_damage: int = 0
 var facilities: Array[Facility] = []
 
 func reset() -> void:
 	health = max_health
-	money = starting_money
+	money = float(starting_money)
 	round_number = 1
 	last_damage = 0
 	facilities.clear()
@@ -60,24 +60,24 @@ func add_income() -> int:
 	var income: int = base_income
 	if last_damage == 0:
 		income = base_income + perfect_round_bonus
-	money += income
+	money = _snap_money(money + income)
 	emit_signal("stats_changed")
 	return income
 
-func can_afford(cost: int) -> bool:
+func can_afford(cost) -> bool:
 	return cost <= money
 
-func spend_money(cost: int) -> bool:
+func spend_money(cost) -> bool:
 	if cost > money:
 		return false
-	money -= cost
+	money = _snap_money(money - cost)
 	emit_signal("stats_changed")
 	return true
 
-func add_money(amount: int) -> void:
+func add_money(amount) -> void:
 	if amount <= 0:
 		return
-	money += amount
+	money = _snap_money(money + amount)
 	emit_signal("stats_changed")
 
 func advance_round() -> void:
@@ -95,3 +95,6 @@ func get_snapshot() -> Dictionary:
 		"round": round_number,
 		"last_damage": last_damage
 	}
+
+func _snap_money(value: float) -> float:
+	return round(value * 100.0) / 100.0

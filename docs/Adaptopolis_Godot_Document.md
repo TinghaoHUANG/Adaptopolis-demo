@@ -293,7 +293,7 @@ Game over → health ≤ 0.
 Adaptopolis transforms climate adaptation into a spatial problem-solving experience.
 Players face limited space, increasing floods, and economic trade-offs — mirroring real urban resilience challenges.
 
-Document Version 0.2
+Document Version 0.2.5
 Prepared for Codex-assisted development (Godot 4).
 Author: Tinghao HUANG
 Date: 2025-10-04

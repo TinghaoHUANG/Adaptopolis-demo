@@ -129,11 +129,10 @@ func _get_level_highlight(level: int) -> Color:
 	return LEVEL3_HIGHLIGHT
 
 func _format_offer_summary(facility: Facility) -> String:
-	var icon: String = "🌱" if facility.type == "green" else "🏗️"
-	if facility.id == "green_roof":
-		icon = "🏡"
 	var lines: Array[String] = []
-	lines.append("%s %s (Lv %d)" % [icon, facility.name, facility.level])
+	var dots := facility.get_type_dots()
+	var prefix := "%s " % dots if not dots.is_empty() else ""
+	lines.append("%s%s (Lv %d)" % [prefix, facility.name, facility.level])
 	lines.append("💰 %d    🛡️ %d" % [facility.cost, facility.resilience])
 	if facility.special_rule != "":
 		lines.append("📎 %s" % facility.special_rule)
@@ -141,7 +140,9 @@ func _format_offer_summary(facility: Facility) -> String:
 
 func _build_detail_text(facility: Facility) -> String:
 	var parts: Array[String] = []
-	parts.append("%s (Lv %d)" % [facility.name, facility.level])
+	var dots := facility.get_type_dots()
+	var prefix := "%s " % dots if not dots.is_empty() else ""
+	parts.append("%s%s (Lv %d)" % [prefix, facility.name, facility.level])
 	parts.append("Cost: %d" % facility.cost)
 	parts.append("Resilience: %d" % facility.resilience)
 	if facility.description != "":
@@ -181,4 +182,3 @@ func _update_status_hint() -> void:
 		set_status(_build_detail_text(facility))
 	else:
 		set_status("Select a facility, then click the grid to place it.")
-

@@ -167,6 +167,9 @@ func _validate_placement(facility: Facility, origin: Vector2i, allow_self_overla
 			continue
 		if cell.occupied:
 			return {"allowed": false, "merge_target": null}
+		if facility.id == "pump_station":
+			if not _has_adjacent_water(target):
+				return {"allowed": false, "merge_target": null}
 	return {"allowed": true, "merge_target": merge_target}
 
 func can_place_facility(facility: Facility, origin: Vector2i) -> bool:
@@ -223,7 +226,7 @@ func move_facility(facility: Facility, origin: Vector2i) -> bool:
 		emit_signal("facility_merged", facility, merge_target)
 	return true
 
-func _resolve_merges(facility: Facility) -> void:
+func _resolve_merges(_facility: Facility) -> void:
 	# Adjacency-based merging has been disabled; stacking now handles all merge logic.
 	pass
 
@@ -248,6 +251,14 @@ func _clear_facility_cells(facility: Facility) -> void:
 		cell.facility_ref = null
 		cell.occupied = cell.is_building or cell.is_water
 	facility_cells[facility].clear()
+
+func _has_adjacent_water(position: Vector2i) -> bool:
+	var directions := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+	for dir in directions:
+		var neighbor := get_cell(position + dir)
+		if neighbor and neighbor.is_water:
+			return true
+	return false
 
 func get_cell(position: Vector2i) -> GridCell:
 	if position.x < 0 or position.y < 0:

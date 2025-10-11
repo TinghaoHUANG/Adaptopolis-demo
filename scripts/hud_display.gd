@@ -16,9 +16,9 @@ var forecast_max: int = 0
 func _ready() -> void:
 	_update_label()
 
-func set_forecast(range: Dictionary) -> void:
-	forecast_min = int(range.get("min", 0))
-	forecast_max = int(range.get("max", 0))
+func set_forecast(forecast_range: Dictionary) -> void:
+	forecast_min = int(forecast_range.get("min", 0))
+	forecast_max = int(forecast_range.get("max", 0))
 	_update_label()
 
 func display_rain_report(_report: Dictionary) -> void:
@@ -43,5 +43,3 @@ func _get_report_label() -> Label:
 	if rain_report_label_path.is_empty():
 		return null
 	return get_node_or_null(rain_report_label_path) as Label
-
-

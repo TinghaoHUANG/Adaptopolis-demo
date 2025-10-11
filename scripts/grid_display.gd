@@ -115,8 +115,8 @@ func refresh_all() -> void:
 			else:
 				_set_cell_visual(pos, "", base_texture, empty_color, false)
 
-func get_cell_center(position: Vector2i) -> Vector2:
-	var button: Button = cells.get(position)
+func get_cell_center(cell_position: Vector2i) -> Vector2:
+	var button: Button = cells.get(cell_position)
 	if button == null:
 		return Vector2.ZERO
 	var rect: Rect2 = button.get_global_rect()

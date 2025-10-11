@@ -112,6 +112,8 @@ func _ready() -> void:
 		facility_info_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 		facility_info_panel.connect("mouse_entered", Callable(self, "_on_facility_info_mouse_entered"))
 		facility_info_panel.connect("mouse_exited", Callable(self, "_on_facility_info_mouse_exited"))
+	if facility_info_sell_button:
+		facility_info_sell_button.connect("pressed", Callable(self, "_on_facility_sell_pressed"))
 	_bind_controls()
 
 	facility_info_hide_timer = Timer.new()
@@ -133,8 +135,6 @@ func _ready() -> void:
 		shop_display.connect("skip_selected", Callable(self, "_on_shop_skip_selected"))
 		shop_display.connect("refresh_requested", Callable(self, "_on_shop_refresh_requested"))
 
-	if facility_info_sell_button:
-		facility_info_sell_button.connect("pressed", Callable(self, "_on_facility_sell_pressed"))
 
 	grid_manager.set_city_state(city_state)
 	facility_library.load_from_json(facility_data_path)
@@ -394,7 +394,7 @@ func _on_grid_cell_hovered(position: Vector2i) -> void:
 	var facility := grid_manager.get_facility_at(position)
 	_schedule_facility_info(facility)
 
-func _on_grid_cell_hover_exited(position: Vector2i) -> void:
+func _on_grid_cell_hover_exited(_position: Vector2i) -> void:
 	_cancel_hover_schedule()
 	if hovered_facility == null:
 		return
@@ -416,10 +416,12 @@ func _show_facility_info(facility: Facility) -> void:
 	hovered_facility = facility
 	hovered_sell_price = _calculate_sell_price(facility)
 	_position_facility_info(facility)
+	var dots := facility.get_type_dots()
+	var prefix := "%s " % dots if not dots.is_empty() else ""
 	if facility_info_panel:
 		facility_info_panel.visible = true
 	if facility_info_title:
-		facility_info_title.text = "%s (Lv %d)" % [facility.name, facility.level]
+		facility_info_title.text = "%s%s (Lv %d)" % [prefix, facility.name, facility.level]
 	if facility_info_details:
 		var lines: Array[String] = []
 		if facility.description != "":
@@ -603,9 +605,9 @@ func _update_button_state() -> void:
 		disabled = true
 	next_round_button.disabled = disabled
 
-func _format_forecast_range(range: Dictionary) -> String:
-	var min_value := int(range.get("min", 0))
-	var max_value := int(range.get("max", 0))
+func _format_forecast_range(forecast_range: Dictionary) -> String:
+	var min_value := int(forecast_range.get("min", 0))
+	var max_value := int(forecast_range.get("max", 0))
 	if min_value == 0 and max_value == 0:
 		return "?"
 	return "%d - %d" % [min_value, max_value]

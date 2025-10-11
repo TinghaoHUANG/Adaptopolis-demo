@@ -15,6 +15,11 @@ const LEVEL_COST_MULTIPLIERS := {
 	3: 3.5
 }
 const LEVEL_RESILIENCE_MULTIPLIER := 1.5
+const TYPE_SYMBOLS := {
+	"green": "🟩",
+	"blue": "💧",
+	"grey": "⬛"
+}
 
 @export var id: String = ""
 @export var name: String = ""
@@ -29,6 +34,7 @@ const LEVEL_RESILIENCE_MULTIPLIER := 1.5
 
 var base_cost: int = 0
 var base_resilience: int = 0
+var type_tags: Array[String] = []
 
 func clone() -> Facility:
 	var copy: Facility = Facility.new()
@@ -44,6 +50,7 @@ func clone() -> Facility:
 	copy.unlock_round = unlock_round
 	copy.base_cost = base_cost
 	copy.base_resilience = base_resilience
+	copy.type_tags = type_tags.duplicate()
 	return copy
 
 static func from_dict(data: Dictionary) -> Facility:
@@ -60,6 +67,18 @@ static func from_dict(data: Dictionary) -> Facility:
 	facility.unlock_round = data.get("unlock_round", 1)
 	facility.base_cost = facility.cost
 	facility.base_resilience = facility.resilience
+	var tags = data.get("type_tags", [])
+	var collected: Array[String] = []
+	if typeof(tags) == TYPE_ARRAY:
+		for tag in tags:
+			if typeof(tag) == TYPE_STRING and not collected.has(tag):
+				collected.append(tag)
+	if collected.is_empty():
+		if facility.type.is_empty():
+			collected = []
+		else:
+			collected = [facility.type]
+	facility.type_tags = collected
 	return facility
 
 func to_dict() -> Dictionary:
@@ -73,8 +92,29 @@ func to_dict() -> Dictionary:
 		"level": level,
 		"description": description,
 		"special_rule": special_rule,
-		"unlock_round": unlock_round
+		"unlock_round": unlock_round,
+		"type_tags": type_tags.duplicate()
 	}
+
+func get_type_tags() -> Array[String]:
+	if type_tags.is_empty():
+		return [type]
+	return type_tags.duplicate()
+
+func get_type_dots() -> String:
+	var dots: Array[String] = []
+	for tag in get_type_tags():
+		var symbol: String = TYPE_SYMBOLS.get(tag, "")
+		if symbol.is_empty():
+			continue
+		if not dots.has(symbol):
+			dots.append(symbol)
+	if dots.is_empty():
+		return ""
+	var result := ""
+	for dot in dots:
+		result += dot
+	return result
 
 func get_footprint() -> Array[Vector2i]:
 	var footprint: Array[Vector2i] = []

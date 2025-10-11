@@ -1,6 +1,6 @@
 Adaptopolis — Game Design Document (GDD)
 
-Version: 0.2
+Version: 0.2.5
 Engine: Godot 4
 Language: English (multilingual support planned)
 Genre: Roguelike · Strategy · City-building
@@ -368,7 +368,7 @@ while implicitly teaching systems thinking about urban adaptation.
 It’s not about “winning” against nature, but about learning to coexist within constraints —
 using limited space, money, and knowledge to build a future-ready city.
 
-Document Version: 0.2
+Document Version: 0.2.5
 Prepared for: Codex / Godot 4 Development Team
 Author: Tinghao HUANG
 Date: 2025-10-04

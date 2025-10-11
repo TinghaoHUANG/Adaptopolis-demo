@@ -38,13 +38,39 @@ func simulate_round(city: CityState) -> Dictionary:
 	else:
 		intensity = calculate_intensity(city.round_number)
 	last_intensity = intensity
-	var total_resilience: int = city.get_total_resilience()
+	var result := _apply_facility_effects(city)
+	var total_resilience: int = int(result.get("resilience", city.get_total_resilience()))
 	var damage: int = max(intensity - total_resilience, 0)
 	city.apply_damage(damage)
 	return {
 		"intensity": intensity,
 		"resilience": total_resilience,
-		"damage": damage
+		"damage": damage,
+		"pump_events": result.get("pump_events", [])
+	}
+
+func _apply_facility_effects(city: CityState) -> Dictionary:
+	var resilience_total: float = 0.0
+	var pump_events: Array = []
+	for facility: Facility in city.facilities:
+		if facility == null:
+			continue
+		if facility.id == "pump_station":
+			var event := {
+				"facility": facility,
+				"cost": 0.5,
+				"active": false,
+				"resilience": facility.resilience
+			}
+			if city.spend_money(0.5):
+				event["active"] = true
+				resilience_total += facility.resilience
+			pump_events.append(event)
+		else:
+			resilience_total += facility.resilience
+	return {
+		"resilience": int(resilience_total),
+		"pump_events": pump_events
 	}
 
 func prepare_forecast(round_number: int) -> Dictionary:
