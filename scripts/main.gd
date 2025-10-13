@@ -34,6 +34,11 @@ extends Node
 @export var facility_info_title_path: NodePath
 @export var facility_info_details_path: NodePath
 @export var facility_info_sell_button_path: NodePath
+@export var card_bar_path: NodePath
+@export var card_data_path: String = "res://data/card_data.json"
+@export var card_info_panel_path: NodePath
+@export var card_info_title_path: NodePath
+@export var card_info_details_path: NodePath
 
 @export var facility_data_path: String = "res://data/facility_data.json"
 @export var locale_files: Dictionary = {
@@ -81,8 +86,42 @@ var facility_info_hide_timer: Timer = null
 var game_active: bool = false
 var endless_mode: bool = false
 var round_animation_active: bool = false
+var card_bar: CardBar = null
+var acquired_cards: Array[Dictionary] = []
+var acquired_card_lookup: Dictionary = {}
+var card_definitions: Dictionary = {}
+var card_order: Array[String] = []
+var next_green_discount: int = 0
+var next_build_discount: int = 0
+var pending_damage_reduction_once: int = 0
+var card_info_panel: PanelContainer = null
+var card_info_title: Label = null
+var card_info_details: RichTextLabel = null
+var card_hover_timer: Timer = null
+var card_info_hide_timer: Timer = null
+var pending_hover_card: Dictionary = {}
+var card_info_hovered: bool = false
+var ui_layer: CanvasLayer = null
+var base_resolution: Vector2 = Vector2(
+	float(ProjectSettings.get_setting("display/window/size/viewport_width", 1920)),
+	float(ProjectSettings.get_setting("display/window/size/viewport_height", 1080))
+)
 const VICTORY_ROUND_TARGET := 20
 const FACILITY_INFO_HIDE_DELAY := 0.12
+const GARDEN_CITY_IDS := [
+	"rain_garden",
+	"green_roof",
+	"permeable_pavement",
+	"bio_swale",
+	"tree_trench",
+	"infiltration_trench"
+]
+const CARD_ADJACENT_DIRECTIONS := [
+	Vector2i.UP,
+	Vector2i.DOWN,
+	Vector2i.LEFT,
+	Vector2i.RIGHT
+]
 
 func _ready() -> void:
 	city_state = _ensure_node(city_state_path, CityState) as CityState
@@ -108,12 +147,23 @@ func _ready() -> void:
 	facility_info_title = get_node_or_null(facility_info_title_path) as Label
 	facility_info_details = get_node_or_null(facility_info_details_path) as RichTextLabel
 	facility_info_sell_button = get_node_or_null(facility_info_sell_button_path) as Button
+	card_bar = get_node_or_null(card_bar_path) as CardBar
+	card_info_panel = get_node_or_null(card_info_panel_path) as PanelContainer
+	card_info_title = get_node_or_null(card_info_title_path) as Label
+	card_info_details = get_node_or_null(card_info_details_path) as RichTextLabel
 	if facility_info_panel:
 		facility_info_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 		facility_info_panel.connect("mouse_entered", Callable(self, "_on_facility_info_mouse_entered"))
 		facility_info_panel.connect("mouse_exited", Callable(self, "_on_facility_info_mouse_exited"))
 	if facility_info_sell_button:
 		facility_info_sell_button.connect("pressed", Callable(self, "_on_facility_sell_pressed"))
+	if card_info_panel:
+		card_info_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+		card_info_panel.visible = false
+		card_info_panel.z_index = 200
+		card_info_panel.z_as_relative = false
+		card_info_panel.connect("mouse_entered", Callable(self, "_on_card_info_mouse_entered"))
+		card_info_panel.connect("mouse_exited", Callable(self, "_on_card_info_mouse_exited"))
 	_bind_controls()
 
 	facility_info_hide_timer = Timer.new()
@@ -135,6 +185,10 @@ func _ready() -> void:
 		shop_display.connect("skip_selected", Callable(self, "_on_shop_skip_selected"))
 		shop_display.connect("refresh_requested", Callable(self, "_on_shop_refresh_requested"))
 
+	if card_bar:
+		card_bar.connect("card_hovered", Callable(self, "_on_card_hovered"))
+		card_bar.connect("card_hover_exited", Callable(self, "_on_card_hover_exited"))
+
 
 	grid_manager.set_city_state(city_state)
 	facility_library.load_from_json(facility_data_path)
@@ -154,7 +208,7 @@ func _ready() -> void:
 	shop_manager.connect("offers_changed", Callable(self, "_on_offers_changed"))
 	shop_manager.connect("purchase_failed", Callable(self, "_on_purchase_failed"))
 
-	var ui_layer := get_node_or_null("UI") as CanvasLayer
+	ui_layer = get_node_or_null("UI") as CanvasLayer
 	if ui_layer and round_summary_animator == null:
 		round_summary_animator = RoundSummaryAnimator.new()
 		round_summary_animator.name = "RoundSummaryAnimator"
@@ -167,6 +221,24 @@ func _ready() -> void:
 	add_child(hover_info_timer)
 	hover_info_timer.connect("timeout", Callable(self, "_on_hover_info_timeout"))
 
+	card_hover_timer = Timer.new()
+	card_hover_timer.one_shot = true
+	add_child(card_hover_timer)
+	card_hover_timer.connect("timeout", Callable(self, "_on_card_hover_timeout"))
+
+	card_info_hide_timer = Timer.new()
+	card_info_hide_timer.one_shot = true
+	card_info_hide_timer.wait_time = FACILITY_INFO_HIDE_DELAY
+	add_child(card_info_hide_timer)
+	card_info_hide_timer.connect("timeout", Callable(self, "_on_card_info_hide_timeout"))
+
+	_update_ui_scale()
+	var root_window: Window = get_tree().root
+	if root_window and not root_window.is_connected("size_changed", Callable(self, "_on_window_size_changed")):
+		root_window.connect("size_changed", Callable(self, "_on_window_size_changed"))
+
+	_load_card_definitions()
+	_reset_cards()
 	_show_start_menu()
 
 func start_new_game() -> void:
@@ -176,6 +248,7 @@ func start_new_game() -> void:
 	selected_offer_index = -1
 	endless_mode = false
 	game_active = true
+	_reset_cards()
 	_hide_start_menu()
 	_hide_victory_menu()
 	city_state.reset()
@@ -199,14 +272,61 @@ func start_new_game() -> void:
 		ui_manager.show_rain_report({})
 	_show_status("A new city rises. Rain forecast: %s. Select a facility to begin building." % _format_forecast_range(forecast_range))
 	_update_button_state()
+	_evaluate_card_unlocks()
 
 func simulate_round() -> Dictionary:
 	var report: Dictionary = rain_system.simulate_round(city_state)
 	ui_manager.show_rain_report(report)
+	var card_effects := _apply_card_post_rain(report)
 	var income := city_state.add_income()
 	report["income"] = income
+	var bonus_income := int(card_effects.get("income_bonus", 0))
+	if bonus_income > 0:
+		city_state.add_money(bonus_income)
+	report["card_bonus"] = bonus_income
+	if card_effects.has("health_restored") and card_effects["health_restored"] > 0:
+		report["card_health_restore"] = card_effects["health_restored"]
+	if card_effects.has("damage_delta"):
+		report["card_damage_delta"] = card_effects["damage_delta"]
+	if card_effects.has("damage_after"):
+		report["damage"] = card_effects["damage_after"]
 	city_state.advance_round()
 	return report
+
+func _prepare_facility_for_purchase(facility: Facility) -> Dictionary:
+	var info := {
+		"original_cost": 0,
+		"green_discount_used": 0,
+		"build_discount_used": 0
+	}
+	if facility == null:
+		return info
+	var cost := facility.cost
+	info["original_cost"] = cost
+	if _facility_has_tag(facility, "green") and next_green_discount > 0:
+		var use := int(min(next_green_discount, cost))
+		cost = max(cost - use, 0)
+		info["green_discount_used"] = use
+	if next_build_discount > 0:
+		var use_general := int(min(next_build_discount, cost))
+		cost = max(cost - use_general, 0)
+		info["build_discount_used"] = use_general
+	facility.cost = cost
+	return info
+
+func _commit_purchase_discounts(discount_info: Dictionary) -> void:
+	var green_used := int(discount_info.get("green_discount_used", 0))
+	if green_used > 0:
+		next_green_discount = max(0, next_green_discount - green_used)
+	var build_used := int(discount_info.get("build_discount_used", 0))
+	if build_used > 0:
+		next_build_discount = max(0, next_build_discount - build_used)
+
+func _revert_facility_cost(facility: Facility, discount_info: Dictionary) -> void:
+	if facility == null:
+		return
+	if discount_info.has("original_cost"):
+		facility.cost = int(discount_info["original_cost"])
 
 func attempt_purchase(index: int, origin: Vector2i) -> bool:
 	if _is_dragging():
@@ -214,7 +334,16 @@ func attempt_purchase(index: int, origin: Vector2i) -> bool:
 		return false
 	if not shop_manager:
 		return false
-	return _shop_purchase_offer(index, grid_manager, origin, selected_preview_facility)
+	var discount_info: Dictionary = {}
+	if selected_preview_facility:
+		discount_info = _prepare_facility_for_purchase(selected_preview_facility)
+	var success := _shop_purchase_offer(index, grid_manager, origin, selected_preview_facility)
+	if success:
+		_commit_purchase_discounts(discount_info)
+	else:
+		if selected_preview_facility:
+			_revert_facility_cost(selected_preview_facility, discount_info)
+	return success
 
 func save_game() -> bool:
 	if _is_dragging():
@@ -222,7 +351,7 @@ func save_game() -> bool:
 		return false
 	if not save_manager:
 		return false
-	var success := save_manager.save_game(city_state, grid_manager)
+	var success := save_manager.save_game(city_state, grid_manager, _get_card_state_snapshot())
 	if success:
 		_show_status("Game saved.")
 	return success
@@ -240,16 +369,19 @@ func load_game() -> bool:
 			round_animation_active = false
 		if grid_display:
 			_grid_display_call("refresh_all")
+		_apply_card_state(save_manager.get_last_card_state())
 		var forecast_range := _update_forecast()
 		if ui_manager:
 			ui_manager.show_rain_report({})
 		_show_status("Save loaded. Rain forecast: %s. Continue defending the city." % _format_forecast_range(forecast_range))
+		_evaluate_card_unlocks()
 	_update_button_state()
 	return loaded
 
 func _on_facility_placed(_facility, _origin: Vector2i) -> void:
 	if grid_display:
 		_grid_display_call("refresh_all")
+	_evaluate_card_unlocks()
 
 func _on_facility_purchased(facility) -> void:
 	selected_offer_index = -1
@@ -514,16 +646,19 @@ func _on_facility_sell_pressed() -> void:
 func _on_grid_facility_removed(facility: Facility) -> void:
 	if facility == hovered_facility:
 		_hide_facility_info()
+	_evaluate_card_unlocks()
 
 func _on_grid_facility_moved(facility: Facility, _new_origin: Vector2i, _previous_origin: Vector2i) -> void:
 	if facility == hovered_facility:
 		_position_facility_info(facility)
+	_evaluate_card_unlocks()
 
 func _on_grid_facility_merged(facility: Facility, absorbed: Facility) -> void:
 	if hovered_facility == absorbed:
 		_hide_facility_info()
 	elif hovered_facility == facility:
 		_position_facility_info(facility)
+	_evaluate_card_unlocks()
 
 func _input(event: InputEvent) -> void:
 	if not game_active:
@@ -589,7 +724,19 @@ func _on_next_round_pressed() -> void:
 	var resilience_value := int(report.get("resilience", 0))
 	var damage := int(report.get("damage", 0))
 	var income := int(report.get("income", 0))
-	_show_status("Rain %d vs Resilience %d → Damage %d. Earned 💰%d." % [intensity, resilience_value, damage, income])
+	var card_bonus := int(report.get("card_bonus", 0))
+	var message := "Rain %d vs Resilience %d → Damage %d. Earned 💰%d." % [intensity, resilience_value, damage, income]
+	if card_bonus > 0:
+		message += " Card bonus 💰%d." % card_bonus
+	var damage_delta := int(report.get("card_damage_delta", 0))
+	if damage_delta > 0:
+		message += " Cards prevented %d damage." % damage_delta
+	elif damage_delta < 0:
+		message += " Card penalty %+d damage." % damage_delta
+	var health_gain := int(report.get("card_health_restore", 0))
+	if health_gain > 0:
+		message += " Cards restored ❤️%d." % health_gain
+	_show_status(message)
 func _on_city_stats_changed() -> void:
 	_update_button_state()
 
@@ -643,6 +790,9 @@ func _show_start_menu() -> void:
 		shop_panel.visible = false
 	if grid_display:
 		grid_display.visible = false
+	if card_bar:
+		card_bar.visible = false
+	_hide_card_info()
 	selected_offer_index = -1
 	_shop_display_call("clear_selection")
 	_update_button_state()
@@ -657,6 +807,9 @@ func _hide_start_menu() -> void:
 		shop_panel.visible = true
 	if grid_display:
 		grid_display.visible = true
+	if card_bar:
+		card_bar.visible = true
+	_hide_card_info()
 	_update_button_state()
 
 func _show_victory_menu(summary: String) -> void:
@@ -890,3 +1043,547 @@ func _show_status(message: String) -> void:
 	if status_label:
 		status_label.text = message
 	print(message)
+
+func _reset_cards() -> void:
+	acquired_cards.clear()
+	acquired_card_lookup.clear()
+	next_green_discount = 0
+	next_build_discount = 0
+	pending_damage_reduction_once = 0
+	_hover_cancel_card_schedule()
+	_hide_card_info()
+	_refresh_card_bar()
+
+func _refresh_card_bar() -> void:
+	if card_bar == null:
+		return
+	var display_cards: Array = []
+	for card_info in acquired_cards:
+		var entry := {
+			"id": card_info.get("id", ""),
+			"name": card_info.get("name", "Card"),
+			"description": card_info.get("description", "")
+		}
+		display_cards.append(entry)
+	card_bar.show_cards(display_cards)
+
+func _hover_cancel_card_schedule() -> void:
+	if card_hover_timer:
+		card_hover_timer.stop()
+	if card_info_hide_timer:
+		card_info_hide_timer.stop()
+	pending_hover_card = {}
+	card_info_hovered = false
+
+func _show_card_info(card_info: Dictionary) -> void:
+	if card_info_panel == null:
+		return
+	var title := String(card_info.get("name", "Card"))
+	var description := String(card_info.get("description", ""))
+	if description.is_empty():
+		description = "[i]No details available yet.[/i]"
+	if card_info_title:
+		card_info_title.text = title
+	if card_info_details:
+		card_info_details.bbcode_text = description
+	card_info_panel.visible = true
+	card_info_hovered = false
+
+func _hide_card_info() -> void:
+	if card_info_panel:
+		card_info_panel.visible = false
+	card_info_hovered = false
+
+func _on_card_hovered(card_info: Dictionary) -> void:
+	if card_info.is_empty():
+		return
+	pending_hover_card = card_info.duplicate(true)
+	if card_info_hide_timer:
+		card_info_hide_timer.stop()
+	if card_hover_timer:
+		card_hover_timer.stop()
+	if hover_info_delay <= 0.0:
+		_show_card_info(pending_hover_card)
+	else:
+		card_hover_timer.start(hover_info_delay)
+
+func _on_card_hover_exited(_card_info: Dictionary) -> void:
+	pending_hover_card = {}
+	if card_hover_timer:
+		card_hover_timer.stop()
+	if card_info_panel and card_info_panel.visible:
+		if card_info_hide_timer:
+			card_info_hide_timer.start(FACILITY_INFO_HIDE_DELAY)
+
+func _on_card_hover_timeout() -> void:
+	if pending_hover_card.is_empty():
+		return
+	_show_card_info(pending_hover_card)
+	pending_hover_card = {}
+
+func _on_card_info_mouse_entered() -> void:
+	card_info_hovered = true
+	if card_info_hide_timer:
+		card_info_hide_timer.stop()
+
+func _on_card_info_mouse_exited() -> void:
+	card_info_hovered = false
+	if card_info_panel and card_info_panel.visible:
+		var panel_rect := card_info_panel.get_global_rect()
+		if panel_rect.has_point(get_viewport().get_mouse_position()):
+			return
+	if card_info_hide_timer:
+		card_info_hide_timer.start(FACILITY_INFO_HIDE_DELAY)
+
+func _on_card_info_hide_timeout() -> void:
+	if card_info_hovered:
+		return
+	_hide_card_info()
+
+func _on_window_size_changed() -> void:
+	_update_ui_scale()
+
+func _update_ui_scale() -> void:
+	if ui_layer == null:
+		return
+	var viewport := get_viewport()
+	var viewport_rect: Rect2 = viewport.get_visible_rect()
+	var viewport_size: Vector2 = viewport_rect.size
+	if viewport_size.x <= 0 or viewport_size.y <= 0:
+		return
+	if base_resolution.x <= 0 or base_resolution.y <= 0:
+		base_resolution = viewport_size
+	var scale_factor: float = min(viewport_size.x / base_resolution.x, viewport_size.y / base_resolution.y)
+	if scale_factor <= 0:
+		scale_factor = 1.0
+	var scaled_size: Vector2 = base_resolution * scale_factor
+	var transform := Transform2D.IDENTITY
+	transform.x = Vector2(scale_factor, 0.0)
+	transform.y = Vector2(0.0, scale_factor)
+	var offset := Vector2.ZERO
+	if scale_factor != 0.0:
+		offset = (viewport_size - scaled_size) * 0.5 / scale_factor
+	transform.origin = offset
+	viewport.canvas_transform = transform
+	ui_layer.offset = Vector2.ZERO
+
+func _has_card(card_id: String) -> bool:
+	return acquired_card_lookup.has(card_id)
+
+func _unlock_card(card_id: String) -> void:
+	if acquired_card_lookup.has(card_id):
+		return
+	var definition: Dictionary = card_definitions.get(card_id, {})
+	if definition.is_empty():
+		push_warning("Unknown card id: %s" % card_id)
+		return
+	var card_info := _create_card_info(definition)
+	acquired_cards.append(card_info)
+	acquired_card_lookup[card_id] = card_info
+	_apply_card_on_unlock(card_id, card_info)
+	_refresh_card_bar()
+	_show_status("Unlocked card: %s!" % card_info.get("name", card_id))
+
+func _evaluate_card_unlocks() -> void:
+	for card_id in card_order:
+		if _has_card(card_id):
+			continue
+		if _check_card_condition(card_id):
+			_unlock_card(card_id)
+
+func _has_three_unique_green_facilities() -> bool:
+	if city_state == null:
+		return false
+	var unique_green_ids: Dictionary = {}
+	for facility in city_state.facilities:
+		var cast_facility := facility as Facility
+		if cast_facility == null:
+			continue
+		if not GARDEN_CITY_IDS.has(cast_facility.id):
+			continue
+		unique_green_ids[cast_facility.id] = true
+		if unique_green_ids.size() >= 3:
+			return true
+	return false
+
+func _create_card_info(definition: Dictionary) -> Dictionary:
+	var card_name := String(definition.get("name", definition.get("id", "")))
+	var effect_summary := String(definition.get("effect_summary", definition.get("description", "")))
+	var condition_summary := String(definition.get("condition_summary", ""))
+	var description := effect_summary.strip_edges()
+	var trimmed_condition := condition_summary.strip_edges()
+	if description.is_empty():
+		description = trimmed_condition
+	elif not trimmed_condition.is_empty():
+		description = "%s\n%s" % [description, trimmed_condition]
+	return {
+		"id": String(definition.get("id", "")),
+		"name": card_name,
+		"description": description.strip_edges(),
+		"_meta": {}
+	}
+
+func _apply_card_on_unlock(card_id: String, card_info: Dictionary) -> void:
+	var metadata_variant: Variant = card_info.get("_meta", {})
+	var metadata: Dictionary = {}
+	if typeof(metadata_variant) == TYPE_DICTIONARY:
+		metadata = metadata_variant
+	match card_id:
+		"sponge_block":
+			next_green_discount += 1
+			metadata["green_discount_applied"] = true
+		"circular_city":
+			next_build_discount += 1
+			metadata["build_discount_applied"] = true
+		"eco_drain_chain":
+			pending_damage_reduction_once += 3
+			metadata["pending_reduction_granted"] = true
+		_:
+			pass
+	card_info["_meta"] = metadata
+
+func _load_card_definitions() -> void:
+	card_definitions.clear()
+	card_order.clear()
+	if card_data_path.is_empty():
+		return
+	if not FileAccess.file_exists(card_data_path):
+		push_warning("Card data not found: %s" % card_data_path)
+		return
+	var file: FileAccess = FileAccess.open(card_data_path, FileAccess.READ)
+	if file == null:
+		push_warning("Unable to open card data: %s" % card_data_path)
+		return
+	var raw: String = file.get_as_text()
+	file.close()
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_ARRAY:
+		push_warning("Card data must be an array: %s" % card_data_path)
+		return
+	for entry in parsed:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var entry_dict: Dictionary = entry as Dictionary
+		var id := String(entry_dict.get("id", ""))
+		if id.is_empty():
+			continue
+		card_definitions[id] = entry_dict.duplicate(true)
+		if not card_order.has(id):
+			card_order.append(id)
+
+func _check_card_condition(card_id: String) -> bool:
+	if city_state == null or grid_manager == null:
+		return false
+	match card_id:
+		"garden_city":
+			return _has_three_unique_green_facilities()
+		"eco_network":
+			return _has_adjacent_green_pair()
+		"urban_canopy":
+			return _facility_exists("tree_trench") and _facility_exists("green_roof")
+		"sponge_block":
+			return _facility_exists("permeable_pavement") and _facility_exists("rain_garden") and _facility_exists("infiltration_trench")
+		"storm_defense_network":
+			return _facilities_adjacent_by_ids("flood_wall", "pump_station")
+		"urban_hardscape":
+			return _check_urban_hardscape_condition()
+		"blue_corridor":
+			return _check_blue_corridor_condition()
+		"living_water_system":
+			return _count_facilities_with_tag("blue") >= 2
+		"sponge_city":
+			return _check_sponge_city_condition()
+		"eco_drain_chain":
+			return _check_eco_drain_chain_condition()
+		"resilient_metropolis":
+			return _count_facilities_with_tag("green") >= 2 and _count_facilities_with_tag("grey") >= 2 and _count_facilities_with_tag("blue") >= 2
+		"circular_city":
+			return _count_facilities_with_tag("green") >= 1 and _count_facilities_with_tag("grey") >= 1 and _count_facilities_with_tag("blue") >= 1 and city_state.money >= 5.0
+		"adaptive_basin_system":
+			return _check_adaptive_basin_condition()
+		_:
+			return false
+
+func _facility_exists(facility_id: String) -> bool:
+	if city_state == null:
+		return false
+	for facility in city_state.facilities:
+		if facility == null:
+			continue
+		if facility.id == facility_id:
+			return true
+	return false
+
+func _get_facilities_by_id(facility_id: String) -> Array[Facility]:
+	var result: Array[Facility] = []
+	if city_state == null:
+		return result
+	for facility in city_state.facilities:
+		var cast_facility := facility as Facility
+		if cast_facility == null:
+			continue
+		if cast_facility.id == facility_id:
+			result.append(cast_facility)
+	return result
+
+func _facility_has_tag(facility: Facility, tag: String) -> bool:
+	if facility == null:
+		return false
+	if facility.type == tag:
+		return true
+	for existing in facility.get_type_tags():
+		if existing == tag:
+			return true
+	return false
+
+func _count_facilities_with_tag(tag: String) -> int:
+	if city_state == null:
+		return 0
+	var count := 0
+	for facility in city_state.facilities:
+		var cast_facility := facility as Facility
+		if cast_facility == null:
+			continue
+		if _facility_has_tag(cast_facility, tag):
+			count += 1
+	return count
+
+func _count_total_facilities() -> int:
+	if city_state == null:
+		return 0
+	return city_state.facilities.size()
+
+func _has_adjacent_green_pair() -> bool:
+	if city_state == null or grid_manager == null:
+		return false
+	var greens: Array[Facility] = []
+	for facility in city_state.facilities:
+		var cast_facility := facility as Facility
+		if cast_facility == null:
+			continue
+		if _facility_has_tag(cast_facility, "green"):
+			greens.append(cast_facility)
+	var total := greens.size()
+	for i in range(total):
+		for j in range(i + 1, total):
+			if _facilities_adjacent(greens[i], greens[j]):
+				return true
+	return false
+
+func _facilities_adjacent_by_ids(id_a: String, id_b: String) -> bool:
+	var list_a := _get_facilities_by_id(id_a)
+	var list_b := _get_facilities_by_id(id_b)
+	if list_a.is_empty() or list_b.is_empty():
+		return false
+	for facility_a in list_a:
+		for facility_b in list_b:
+			if facility_a == facility_b:
+				continue
+			if _facilities_adjacent(facility_a, facility_b):
+				return true
+	return false
+
+func _facilities_adjacent(a: Facility, b: Facility) -> bool:
+	if grid_manager == null or a == null or b == null:
+		return false
+	var cells := grid_manager.get_facility_cells(a)
+	for cell in cells:
+		for dir in CARD_ADJACENT_DIRECTIONS:
+			var neighbor := grid_manager.get_facility_at(cell + dir)
+			if neighbor == b:
+				return true
+	return false
+
+func _facility_adjacent_to_any(source: Facility, targets: Array) -> bool:
+	for candidate in targets:
+		if candidate == null or candidate == source:
+			continue
+		if _facilities_adjacent(source, candidate):
+			return true
+	return false
+
+func _check_blue_corridor_condition() -> bool:
+	if not (_facility_exists("retention_pond") and _facility_exists("detention_basin") and _facility_exists("constructed_wetland")):
+		return false
+	var wetlands := _get_facilities_by_id("constructed_wetland")
+	var ponds := _get_facilities_by_id("retention_pond")
+	var basins := _get_facilities_by_id("detention_basin")
+	for wet in wetlands:
+		if _facility_adjacent_to_any(wet, ponds) and _facility_adjacent_to_any(wet, basins):
+			return true
+	return false
+
+func _check_sponge_city_condition() -> bool:
+	if not _facility_exists("constructed_wetland"):
+		return false
+	var wetlands := _get_facilities_by_id("constructed_wetland")
+	var greens: Array[Facility] = []
+	for facility in city_state.facilities:
+		var cast_facility := facility as Facility
+		if cast_facility == null or cast_facility.id == "constructed_wetland":
+			continue
+		if _facility_has_tag(cast_facility, "green"):
+			greens.append(cast_facility)
+	if greens.is_empty():
+		return false
+	for wet in wetlands:
+		if _facility_adjacent_to_any(wet, greens):
+			return true
+	return false
+
+func _check_eco_drain_chain_condition() -> bool:
+	if not (_facility_exists("bio_swale") and _facility_exists("infiltration_trench") and _facility_exists("detention_basin")):
+		return false
+	var trenches := _get_facilities_by_id("infiltration_trench")
+	var bios := _get_facilities_by_id("bio_swale")
+	var basins := _get_facilities_by_id("detention_basin")
+	for trench in trenches:
+		if _facility_adjacent_to_any(trench, bios) and _facility_adjacent_to_any(trench, basins):
+			return true
+	return false
+
+func _check_adaptive_basin_condition() -> bool:
+	if not (_facility_exists("retention_pond") and _facility_exists("flood_wall") and _facility_exists("pump_station")):
+		return false
+	var pumps := _get_facilities_by_id("pump_station")
+	var ponds := _get_facilities_by_id("retention_pond")
+	var walls := _get_facilities_by_id("flood_wall")
+	for pump in pumps:
+		if _facility_adjacent_to_any(pump, ponds) and _facility_adjacent_to_any(pump, walls):
+			return true
+	return false
+
+func _check_urban_hardscape_condition() -> bool:
+	var total := _count_total_facilities()
+	if total <= 0:
+		return false
+	var grey := _count_facilities_with_tag("grey")
+	return grey * 2 >= total
+
+func _get_card_state_snapshot() -> Dictionary:
+	var unlocked: Array[String] = []
+	var metadata: Dictionary = {}
+	for card_info in acquired_cards:
+		var card_id := String(card_info.get("id", ""))
+		if card_id.is_empty():
+			continue
+		unlocked.append(card_id)
+		var stored_meta_variant: Variant = card_info.get("_meta", {})
+		if typeof(stored_meta_variant) == TYPE_DICTIONARY:
+			var stored_meta: Dictionary = stored_meta_variant
+			metadata[card_id] = stored_meta.duplicate(true)
+	return {
+		"unlocked": unlocked,
+		"next_green_discount": next_green_discount,
+		"next_build_discount": next_build_discount,
+		"pending_damage_reduction_once": pending_damage_reduction_once,
+		"metadata": metadata
+	}
+
+func _apply_card_state(state: Dictionary) -> void:
+	_reset_cards()
+	var unlocked_variant: Variant = state.get("unlocked", [])
+	var metadata_variant: Variant = state.get("metadata", {})
+	var metadata: Dictionary = {}
+	if typeof(metadata_variant) == TYPE_DICTIONARY:
+		metadata = (metadata_variant as Dictionary).duplicate(true)
+	var unlocked_array: Array = []
+	if typeof(unlocked_variant) == TYPE_ARRAY:
+		unlocked_array = (unlocked_variant as Array).duplicate()
+	for entry_variant in unlocked_array:
+		var card_id := String(entry_variant)
+		if card_id.is_empty():
+			continue
+		var definition: Dictionary = card_definitions.get(card_id, {})
+		if definition.is_empty():
+			continue
+		var card_info := _create_card_info(definition)
+		var stored_meta_variant: Variant = metadata.get(card_id, {})
+		if typeof(stored_meta_variant) == TYPE_DICTIONARY:
+			var stored_meta: Dictionary = stored_meta_variant
+			card_info["_meta"] = stored_meta.duplicate(true)
+		acquired_cards.append(card_info)
+		acquired_card_lookup[card_id] = card_info
+	next_green_discount = int(state.get("next_green_discount", 0))
+	next_build_discount = int(state.get("next_build_discount", 0))
+	pending_damage_reduction_once = int(state.get("pending_damage_reduction_once", 0))
+	_refresh_card_bar()
+
+func _apply_card_post_rain(report: Dictionary) -> Dictionary:
+	var damage_before := int(report.get("damage", 0))
+	var damage_multiplier := 1.0
+	var damage_reduction := 0
+	var damage_penalty := 0
+	var income_bonus := 0
+	var health_restore := 0
+	var stats_changed := false
+	if pending_damage_reduction_once > 0:
+		damage_reduction += pending_damage_reduction_once
+		pending_damage_reduction_once = 0
+	for card_info in acquired_cards:
+		var card_id := String(card_info.get("id", ""))
+		match card_id:
+			"garden_city":
+				income_bonus += 3
+			"eco_network":
+				damage_reduction += 1
+			"urban_canopy":
+				income_bonus += 2
+			"sponge_block":
+				damage_reduction += 2
+			"storm_defense_network":
+				damage_multiplier *= 0.5
+			"urban_hardscape":
+				income_bonus += 2
+				damage_penalty += 1
+			"blue_corridor":
+				damage_reduction += 2
+				health_restore += 1
+			"living_water_system":
+				health_restore += 1
+			"sponge_city":
+				damage_reduction += 2
+				income_bonus += 1
+			"resilient_metropolis":
+				income_bonus += 5
+				damage_reduction += 1
+			"adaptive_basin_system":
+				damage_reduction += 3
+			_:
+				pass
+	var damage_after := damage_before
+	damage_after = int(round(float(damage_after) * damage_multiplier))
+	if damage_after < 0:
+		damage_after = 0
+	damage_after = max(damage_after - damage_reduction, 0)
+	damage_after = max(damage_after + damage_penalty, 0)
+	var damage_delta := damage_before - damage_after
+	if damage_delta != 0:
+		if damage_delta > 0:
+			var heal := damage_delta
+			var previous_health := city_state.health
+			city_state.health = min(city_state.max_health, city_state.health + heal)
+			if city_state.health != previous_health:
+				stats_changed = true
+		else:
+			var extra := -damage_delta
+			var prev_health := city_state.health
+			city_state.health = max(0, city_state.health - extra)
+			if city_state.health != prev_health:
+				stats_changed = true
+	var actual_health_restore := 0
+	if health_restore > 0:
+		var before_health := city_state.health
+		city_state.health = min(city_state.max_health, city_state.health + health_restore)
+		actual_health_restore = city_state.health - before_health
+		if actual_health_restore > 0:
+			stats_changed = true
+	city_state.last_damage = damage_after
+	if stats_changed:
+		city_state.emit_signal("stats_changed")
+	return {
+		"income_bonus": income_bonus,
+		"health_restored": actual_health_restore,
+		"damage_delta": damage_delta,
+		"damage_after": damage_after
+	}

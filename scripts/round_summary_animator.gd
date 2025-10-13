@@ -23,11 +23,13 @@ var grid_display: GridDisplay = null
 var is_playing: bool = false
 var _active_tweens: Array[Tween] = []
 var _cancelled: bool = false
+var rain_overlay: RainOverlay = null
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = 100
+	_ensure_rain_overlay()
 
 func set_grid_display(display: GridDisplay) -> void:
 	grid_display = display
@@ -39,7 +41,11 @@ func reset() -> void:
 			tween.kill()
 	_active_tweens.clear()
 	for child in get_children():
+		if rain_overlay != null and child == rain_overlay:
+			continue
 		child.queue_free()
+	if rain_overlay:
+		rain_overlay.reset()
 	is_playing = false
 
 func play_round_report(facilities: Array, grid_manager: GridManager, display: GridDisplay, report: Dictionary) -> void:
@@ -51,6 +57,7 @@ func play_round_report(facilities: Array, grid_manager: GridManager, display: Gr
 		await animation_finished
 	_cancelled = false
 	is_playing = true
+	_ensure_rain_overlay()
 	var facility_list: Array = facilities.duplicate()
 	var pump_events_map: Dictionary = {}
 	for event_data in report.get("pump_events", []):
@@ -84,6 +91,8 @@ func play_round_report(facilities: Array, grid_manager: GridManager, display: Gr
 			await _wait_between_popups()
 		if _cancelled:
 			break
+	if not _cancelled:
+		await _play_rain_animation(report)
 	if not _cancelled:
 		await _show_round_summary(report)
 	is_playing = false
@@ -123,9 +132,26 @@ func _show_round_summary(report: Dictionary) -> void:
 	var total_resilience := int(report.get("resilience", 0))
 	var rainfall := int(report.get("intensity", 0))
 	var damage := int(report.get("damage", 0))
+	var card_bonus := int(report.get("card_bonus", 0))
 	var label := Label.new()
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.text = "🛡️ %d\n🌧️ %d\n💥 %d" % [total_resilience, rainfall, damage]
+	var summary_lines: Array[String] = [
+		"🛡️ %d" % total_resilience,
+		"🌧️ %d" % rainfall,
+		"💥 %d" % damage
+	]
+	if card_bonus > 0:
+		summary_lines.append("🎴 +%d" % card_bonus)
+	var damage_delta := int(report.get("card_damage_delta", 0))
+	if damage_delta != 0:
+		if damage_delta > 0:
+			summary_lines.append("🎯 +%d" % damage_delta)
+		else:
+			summary_lines.append("⚠️ %d" % damage_delta)
+	var health_gain := int(report.get("card_health_restore", 0))
+	if health_gain > 0:
+		summary_lines.append("❤️ +%d" % health_gain)
+	label.text = "\n".join(summary_lines)
 	label.modulate = Color(1, 1, 1, 0)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -171,3 +197,25 @@ func _on_tween_finished(tween: Tween, target: Control) -> void:
 	_active_tweens.erase(tween)
 	if is_instance_valid(target):
 		target.queue_free()
+
+func _ensure_rain_overlay() -> void:
+	if rain_overlay != null:
+		return
+	rain_overlay = RainOverlay.new()
+	rain_overlay.name = "RainOverlay"
+	add_child(rain_overlay)
+
+func _play_rain_animation(report: Dictionary) -> void:
+	if rain_overlay == null or grid_display == null:
+		return
+	var rain_duration := float(report.get("rain_animation_duration", rain_overlay.fall_duration))
+	if rain_duration <= 0.0:
+		rain_duration = rain_overlay.fall_duration
+	var grid_rect := grid_display.get_global_rect()
+	var to_local_transform: Transform2D = get_global_transform_with_canvas().affine_inverse()
+	var top_left: Vector2 = to_local_transform * grid_rect.position
+	var bottom_right: Vector2 = to_local_transform * (grid_rect.position + grid_rect.size)
+	var local_pos := Vector2(min(top_left.x, bottom_right.x), min(top_left.y, bottom_right.y))
+	var local_size := Vector2(abs(bottom_right.x - top_left.x), abs(bottom_right.y - top_left.y))
+	var local_rect := Rect2(local_pos, local_size)
+	await rain_overlay.play(local_rect, rain_duration)

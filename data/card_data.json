@@ -1,0 +1,106 @@
+[
+	{
+		"id": "garden_city",
+		"name": "Garden City",
+		"category": "Green Synergy",
+		"condition_summary": "Have three distinct green infrastructures (Rain Garden, Green Roof, Permeable Pavement, Bio-swale, Tree Trench, Infiltration Trench).",
+		"effect_summary": "+3 funds at the end of each round.",
+		"description": "Encourages diverse green strategies to improve ecological connectivity."
+	},
+	{
+		"id": "eco_network",
+		"name": "Eco Network",
+		"category": "Green Synergy",
+		"condition_summary": "Place any two green facilities so that they touch orthogonally.",
+		"effect_summary": "Adjacent green facilities reduce flood damage by 1 each round.",
+		"description": "Linked vegetation enhances infiltration and detention."
+	},
+	{
+		"id": "urban_canopy",
+		"name": "Urban Canopy",
+		"category": "Green Synergy",
+		"condition_summary": "Have Tree Trench and Green Roof in play.",
+		"effect_summary": "+2 funds each round while both structures are present.",
+		"description": "Vertical greening and street trees cooperate to improve microclimate."
+	},
+	{
+		"id": "sponge_block",
+		"name": "Sponge Block",
+		"category": "Green Synergy",
+		"condition_summary": "Own Permeable Pavement, Rain Garden, and Infiltration Trench simultaneously.",
+		"effect_summary": "Flood damage -2 each round; next green build costs 1 less (once).",
+		"description": "Replicates the absorb-store-infiltrate approach of sponge blocks."
+	},
+	{
+		"id": "storm_defense_network",
+		"name": "Storm Defense Network",
+		"category": "Grey Synergy",
+		"condition_summary": "Place a Flood Wall adjacent to a Pump Station.",
+		"effect_summary": "Flood damage is halved while the pairing remains.",
+		"description": "Combines engineered barriers and pumps for classic flood defense."
+	},
+	{
+		"id": "urban_hardscape",
+		"name": "Urban Hardscape",
+		"category": "Grey Synergy",
+		"condition_summary": "Ensure grey facilities make up at least 50% of all structures.",
+		"effect_summary": "+2 funds per round but flood damage increases by 1.",
+		"description": "High-engineering focus yields quick returns but less resilience."
+	},
+	{
+		"id": "blue_corridor",
+		"name": "Blue Corridor",
+		"category": "Blue Synergy",
+		"condition_summary": "Constructed Wetland must touch both a Retention Pond and a Detention Basin.",
+		"effect_summary": "Flood damage -2 each round and restore 1 city health.",
+		"description": "Creates a linked storage band that moderates runoff and supports ecology."
+	},
+	{
+		"id": "living_water_system",
+		"name": "Living Water System",
+		"category": "Blue Synergy",
+		"condition_summary": "Have at least two blue-tag facilities.",
+		"effect_summary": "Restore 1 city health each round.",
+		"description": "Blue infrastructure improves water quality and ecosystem services."
+	},
+	{
+		"id": "sponge_city",
+		"name": "Sponge City",
+		"category": "Blue-Green Synergy",
+		"condition_summary": "Place a Constructed Wetland adjacent to any other green facility.",
+		"effect_summary": "Flood damage -2 each round and +1 funds.",
+		"description": "Represents hallmark blue-green integration for sustainable drainage."
+	},
+	{
+		"id": "eco_drain_chain",
+		"name": "Eco-Drain Chain",
+		"category": "Blue-Green Synergy",
+		"condition_summary": "Infiltration Trench must touch both a Bio-swale and a Detention Basin.",
+		"effect_summary": "Reduces the next flood damage by 3 (one-time).",
+		"description": "Models tiered conveyance that steps stormwater through capture stages."
+	},
+	{
+		"id": "resilient_metropolis",
+		"name": "Resilient Metropolis",
+		"category": "Mixed Synergy",
+		"condition_summary": "Own at least two green, two grey, and two blue facilities.",
+		"effect_summary": "+5 funds per round and flood damage -1 each round.",
+		"description": "Rewards systemic investment across all infrastructure typologies."
+	},
+	{
+		"id": "circular_city",
+		"name": "Circular City",
+		"category": "Mixed Synergy",
+		"condition_summary": "Have at least one green, one grey, and one blue facility and maintain ≥ 5 funds.",
+		"effect_summary": "Reduces the next build cost by 1 (once).",
+		"description": "Highlights circular resource planning and smart investment."
+	},
+	{
+		"id": "adaptive_basin_system",
+		"name": "Adaptive Basin System",
+		"category": "Mixed Synergy",
+		"condition_summary": "Place a Pump Station adjacent to both a Flood Wall and a Retention Pond.",
+		"effect_summary": "Flood damage -3 each round while the cluster remains.",
+		"description": "Pairs storage, barriers, and pumping for compound flood mitigation."
+	}
+]

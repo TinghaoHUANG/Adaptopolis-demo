@@ -1,253 +1,96 @@
 Adaptopolis — Game Design Document (GDD)
 
-Version: 0.2.5
-Engine: Godot 4
-Language: English (multilingual support planned)
+Version: 0.3.0 (matches current implementation)
+Engine: Godot 4.4
+Languages: English, Chinese (CSV-based)
 Genre: Roguelike · Strategy · City-building
 Theme: Climate adaptation and urban resilience
 
-🎯 1. Game Concept
+1. Game Concept
 
-Adaptopolis is a grid-based, roguelike city-building strategy game where the player acts as the mayor of a city threatened by increasingly frequent and powerful floods.
-Each round, players build adaptive infrastructure to strengthen the city’s resilience while balancing limited funds and spatial constraints.
+Adaptopolis is a grid-based, roguelike city-building strategy game about defending a flood‑prone city. Each round rain intensifies, the city takes damage reduced by total resilience, and the player spends funds in a shop to buy and place infrastructural facilities with distinct shapes.
 
-The gameplay reflects real-world urban climate adaptation challenges:
-
-Limited land for green infrastructure
-
-Cost trade-offs between “grey” (engineered) and “green” (nature-based) systems
-
-Increasing disaster intensity due to climate change
-
-The tension between short-term protection and long-term sustainability
-
-🧩 2. Core Gameplay Loop
-
-The main gameplay loop operates in turns (rounds) and alternates between disaster impact and planning phases.
-
-Loop Summary:
+2. Core Gameplay Loop
 
 Start Round
-
-Show round number, city stats (Health, Balance, Resilience).
-
-Random rain intensity is generated.
+- HUD shows Round, Health, Funds, Resilience; a rain forecast range is displayed.
 
 Rain Phase
-
-Flood event hits the city.
-
-City’s total resilience reduces incoming damage.
-
-Any remaining damage decreases city health.
+- Rain intensity is generated as random(base_min..base_max) + per_round_increase × round.
+- Total resilience reduces incoming damage; remaining damage reduces Health.
 
 Income Phase
+- If damage is 0, award perfect-round bonus; otherwise award base income. Funds carry over.
 
-Income is generated depending on how much damage was avoided.
-
-Full income if no damage, reduced income if partially damaged.
-
-Added to the city’s balance.
-
-Shop Phase
-
-Player is presented with 3–5 random facilities to purchase.
-
-Facilities have shapes (Tetris-style), types (green/grey), and costs.
-
-The player can buy and place facilities on the grid or skip the round.
-
-Placement Phase
-
-The city map (6×8 grid) has limited space and some fixed “building obstacles.”
-
-Facilities must fit geometrically; green roofs can overlap buildings.
-
-Placement affects synergy and long-term Resilience.
+Shop + Placement
+- Shop offers 3 random facilities. Player selects, optionally rotates, and places on a 6×6 grid with buildings and water obstacles.
+- Placement must fit the footprint and respect special rules (see 4. Facilities).
 
 End of Round
+- Apply any unlocked card effects (e.g., Garden City adds +3 funds).
+- Update Round and forecast; continue until Health ≤ 0 (Game Over) or after 20 rounds (Victory → Endless option).
 
-Update stats → prepare for next rainfall (stronger than before).
+3. Systems Overview
 
-Continue until city health ≤ 0 (Game Over).
-
-⚙️ 3. Systems Overview
 3.1 City System
-
-Tracks:
-
-Health — how close the city is to collapse (starts at 100).
-
-Balance — current funds available.
-
-Income — generated after each round.
-
-Infrastructure — all placed facilities (and their resilience).
-
-Calculations:
-
-Total Resilience = Σ(Facility.Resilience)
-Effective Damage = Rain Intensity - Total Resilience
-
-
-If health ≤ 0 → city collapses → game ends.
+- Tracks: Health (max 20), Funds (start 30), Round, facilities, last damage.
+- Income: base 6 per round; perfect round bonus +3 when damage == 0.
+- Resilience: sum of all facility resilience values.
+- Game Over when Health ≤ 0. Victory after completing 20 rounds (then Endless mode optional).
 
 3.2 Rain System
+- Parameters: base_min=5, base_max=10, per_round_increase=2.
+- Forecast cache: HUD shows (min..max) range for the current round.
+- Report includes rain intensity, total resilience, damage, and pump events.
 
-Each round has a randomly generated rain intensity that scales with the round number:
-
-Rain = random(5–10) + round_number * 2
-
-
-Future variants may include weather events:
-
-Heavy Storm (high damage)
-
-Mild Rain (low damage)
-
-Infrastructure Failure (reduced Resilience temporarily)
-
-3.3 Economy System
-
-Players start with an initial balance (e.g., $20).
-
-Income each round:
-
-Condition	Income
-No damage	+20
-Light damage (≤3)	+15
-Moderate (≤7)	+10
-Severe (>7)	+5
-
-Balance carries over between rounds, allowing players to save up for expensive facilities.
+3.3 Grid & Spatial System
+- Board: 6×6 grid.
+- Obstacles: Random buildings (4–5 cells) and water (1–3 cells) generated at start.
+- Rules:
+  - No placement on water.
+  - Buildings block placement except Green Roofs, which must be placed on building tiles.
+  - Pump Station must be orthogonally adjacent to water.
+  - Shapes must fit entirely within bounds; preview indicates valid/invalid.
+  - Rotation via right-click (Shift for counter‑clockwise).
 
 3.4 Facility System
+- Data-driven from JSON (`data/facility_data.json`): id, name, type, type_tags, shape (2D bool), cost, resilience, level, special_rule, unlock_round.
+- Levels: 1..3 with cost multipliers {1.0, 1.9, 3.5} and resilience ×1.5 per level beyond 1.
+- Merging: Stack-based. Placing an identical facility of the same level fully overlapping the same footprint merges and upgrades the piece. Adjacency merging is disabled.
+- Examples (from current catalog): Rain Garden (1×2), Green Roof (1×1, building‑only), Retention Pond (2×2 sliced icon), Pump Station (1×1, needs adjacent water, −0.5 funds/round to activate), plus advanced shapes (Constructed Wetland, Bio‑swale, etc.).
 
-Each facility card has:
+3.5 Shop System
+- Offers: 3 per refresh; level bias increases with round (L2 chance ≥6, L3 chance ≥10).
+- Purchase: requires sufficient funds and a valid placement origin.
+- Skip/Refresh: UI supports skipping a selected offer and refreshing the pool.
 
-Attribute	Description
-ID	Unique identifier
-Name	Display name
-Type	"Green" or "Grey"
-Cost	Money to build
-Resilience	Defensive strength
-Shape	2D boolean grid
-Level	Upgrades through merging
-Types of Facilities
-Type	Example	Description
-Green	Rain Garden, Green Roof, Retention Pond	Nature-based solutions; often synergize; flexible
-Grey	Flood Wall, Dike Expansion	Engineered Resiliences; expensive but powerful
-Merging
+3.6 Card System
+- Card Bar: persistent panel at the top of the HUD that lists unlocked passive cards.
+- Unlocking: cards appear immediately once their in-run condition is satisfied; they persist for the remainder of the run (even if the trigger condition is later broken).
+- Synergy Sets (current build, defined in `data/card_data.json`):
+  - **Green** — Garden City (+3 funds), Eco Network (adjacent greens reduce damage by 1), Urban Canopy (+2 funds), Sponge Block (damage -2, one-time green cost -1).
+  - **Grey** — Storm Defense Network (Flood Wall + Pump Station halve incoming damage), Urban Hardscape (+2 funds but +1 damage pressure when grey ≥ 50%).
+  - **Blue** — Blue Corridor (damage -2 and +1 health with pond–wetland–basin corridor), Living Water System (+1 health when ≥2 blue tags).
+  - **Blue-Green** — Sponge City (Constructed Wetland adjacency yields damage -2, +1 funds), Eco-Drain Chain (Bio-swale → Trench → Basin chain grants a one-time -3 damage buffer).
+  - **Mixed** — Resilient Metropolis (+5 funds and damage -1 with ≥2 of each colour), Circular City (next build cost -1 with balanced colours and funds ≥5), Adaptive Basin System (Pump Station linking Flood Wall + Retention Pond provides damage -3).
+- Effects stack alongside base income/damage calculations and are evaluated each round in `main.gd`.
 
-Two adjacent identical facilities of the same level automatically merge.
+4. Player Progression
+- New game: blank 6×6 map with random buildings/water, starting funds 30, health 20.
+- Difficulty rises with round via rain escalation.
+- Victory after 20 completed rounds; then continue in Endless or restart.
 
-Merged facility gains higher level (e.g., Level 2 → +50% resilience).
+5. Balancing Notes (Current)
+- Green (nature-based) options tend to be cheaper and flexible; Grey options costlier but strong.
+- Spatial pressure from random buildings + water encourages planning and rotation.
+- Simple income (base + perfect bonus) emphasizes damage avoidance without heavy bookkeeping.
 
-Adds strategic layer: positioning for merge potential.
+6. Localization & UI
+- CSV translations (en, zh) loaded at runtime; HUD shows forecast and core stats.
+- Facility info panel on hover; supports selling at 60% of current cost.
 
-Example Facilities
-Name	Type	Shape	Cost	Resilience
-Rain Garden	Green	1×2	5	2
-Green Roof	Green	1×1	6	2 (can overlay)
-Flood Wall	Grey	1×3	12	5
-Retention Pond	Green	2×2	10	4
-3.5 Grid & Spatial System
-
-Map: 6×8 grid.
-Obstacles: Randomly generated “buildings” (2–3 per map).
-
-Cannot be built over (except by Green Roofs).
-
-Create strategic spatial constraints similar to Backpack Battles.
-
-Placement Rules:
-
-Facility must fully fit inside the grid.
-
-Facility cannot overlap existing infrastructure (except Green Roofs).
-
-Shapes are fixed; no rotation unless player unlocks upgrade (future feature).
-
-3.6 Shop System
-
-After each round:
-
-Shop displays random 3–5 facilities.
-
-Player can buy multiple if affordable.
-
-Optional “refresh” button (spend money to reroll offers).
-
-Facilities come from a defined pool with rarity weighting.
-
-Rarity tiers:
-
-Tier	Description	Appearance Chance
-Common	Basic facilities	70%
-Rare	Advanced shapes	25%
-Epic	Unique/synergy facilities	5%
-3.7 Synergy & Adjacency Effects (Future Expansion)
-
-Facilities may boost each other when adjacent:
-
-Two green infrastructures → +10% Resilience bonus.
-
-Green Roof above building → +income bonus.
-
-Grey + Green combination → improved overall Resilience efficiency.
-
-This encourages players to think spatially rather than stacking.
-
-3.8 Events (Future System)
-
-Occasional random events between rounds to add unpredictability:
-
-Government Grant (+money)
-
-Storm Surge (+damage next round)
-
-Public Protest (some facilities disabled)
-
-Technological Breakthrough (reduce cost temporarily)
-
-🎮 4. Player Progression
-
-Each new game starts on a blank city map.
-
-Difficulty scales dynamically with the number of rounds survived.
-
-The game ends when health ≤ 0, displaying:
-
-Survived Rounds
-
-Total Infrastructure Built
-
-Highest Facility Level
-
-City Resilience Score (optional formula)
-
-Longer-term (future roadmap):
-
-Persistent unlocks (e.g., new facility types)
-
-Achievement-style goals (e.g., “Survive 10 rounds without flood damage”)
-
-📊 5. Balancing Principles
-
-Trade-off between Cost and Flexibility
-
-Grey = high Resilience, expensive, rigid.
-
-Green = lower Resilience, cheaper, synergistic, space-efficient.
-
-Spatial Pressure
-
-Random building obstacles ensure no two playthroughs feel identical.
-
-Placement becomes both a math and geometry puzzle.
-
-Income-Damage Feedback Loop
-
+7. Roadmap (Future)
+- Optional adjacency‑merge variant, richer income tiers by damage, events, and synergies; expanded art for all facilities.
 Players doing well earn more → buy better Resilience.
 
 Players taking damage earn less → downward pressure.

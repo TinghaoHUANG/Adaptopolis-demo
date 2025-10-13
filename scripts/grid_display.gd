@@ -16,7 +16,7 @@ signal cell_hover_exited(position: Vector2i)
 @export var grid_manager_path: NodePath
 @export var grid_columns: int = 6
 @export var grid_rows: int = 6
-@export var cell_size: Vector2 = Vector2(64, 64)
+@export var cell_size: Vector2 = Vector2(128, 128)
 @export var empty_color: Color = Color(0.20, 0.22, 0.26)
 @export var building_color: Color = Color(0.35, 0.37, 0.45)
 @export var water_color: Color = Color(0.18, 0.32, 0.55)

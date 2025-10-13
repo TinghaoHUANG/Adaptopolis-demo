@@ -10,17 +10,20 @@ extends Node
 
 
 @export var save_path: String = "user://savegame.json"
+var last_loaded_card_state: Dictionary = {}
 
-func save_game(city_state: CityState, grid_manager: GridManager) -> bool:
+func save_game(city_state: CityState, grid_manager: GridManager, card_state: Dictionary = {}) -> bool:
 	var data: Dictionary = {
 		"city": city_state.get_snapshot(),
 		"grid": grid_manager.serialize_state(),
 		"buildings": _vectors_to_raw(grid_manager.get_building_positions()),
-		"water": _vectors_to_raw(grid_manager.get_water_positions())
+		"water": _vectors_to_raw(grid_manager.get_water_positions()),
+		"cards": _prepare_card_state(card_state)
 	}
 	return _write_json(save_path, data)
 
 func load_game(city_state: CityState, grid_manager: GridManager, library: FacilityLibrary) -> bool:
+	last_loaded_card_state = {}
 	if not FileAccess.file_exists(save_path):
 		return false
 	var file: FileAccess = FileAccess.open(save_path, FileAccess.READ)
@@ -43,7 +46,15 @@ func load_game(city_state: CityState, grid_manager: GridManager, library: Facili
 	var water_positions: Array[Vector2i] = _raw_to_vectors(water_raw)
 	var grid_data: Array = parsed.get("grid", [])
 	grid_manager.load_state(grid_data, library, building_positions, water_positions)
+	var card_state_variant: Variant = parsed.get("cards", {})
+	if typeof(card_state_variant) == TYPE_DICTIONARY:
+		last_loaded_card_state = (card_state_variant as Dictionary).duplicate(true)
+	else:
+		last_loaded_card_state = {}
 	return true
+
+func get_last_card_state() -> Dictionary:
+	return last_loaded_card_state.duplicate(true)
 
 func delete_save() -> void:
 	if FileAccess.file_exists(save_path):
@@ -57,6 +68,11 @@ func _write_json(path: String, data) -> bool:
 	file.store_string(JSON.stringify(data, "\t"))
 	file.close()
 	return true
+
+func _prepare_card_state(state) -> Dictionary:
+	if typeof(state) != TYPE_DICTIONARY:
+		return {}
+	return (state as Dictionary).duplicate(true)
 
 func _vectors_to_raw(vectors: Array[Vector2i]) -> Array:
 	var result: Array = []
