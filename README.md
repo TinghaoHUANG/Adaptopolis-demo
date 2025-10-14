@@ -2,6 +2,18 @@
 
 Adaptopolis is a grid-based, roguelike city-building prototype built with Godot 4.4. Players steward a flood-prone city by purchasing and placing adaptive infrastructure on a constrained 6×6 grid while rainfall intensity escalates every round.
 
+## Game Objective
+
+Keep the city alive for as many rounds as possible while climate-driven storms intensify. Balance health, funds, and resilience by investing in green, grey, and blue infrastructure, unlocking synergy cards, and reacting to escalating rainfall before the city’s health reaches zero.
+
+## Gameplay Overview
+
+1. **Plan & Place** – Begin each run with a small budget, a randomized map, and a rotating shop. Buy facilities, rotate and drag them onto the 6×6 grid, and plan spatial synergies that boost resilience or income.
+2. **Endure the Storm** – The `RainSystem` rolls stronger rainfall every round; the combined resilience of placed facilities reduces incoming damage, while leftover damage chips away at city health.
+3. **Earn & Reinvest** – Surviving the storm grants baseline income plus any bonuses from cards. Spend wisely in the shop, refresh offers, or save for larger infrastructure projects.
+4. **Unlock Cards** – Meeting spatial or compositional goals unlocks passive cards (e.g., Garden City, Storm Defense Network) that deliver bonuses like extra funds, damage reduction, or construction discounts.
+5. **Repeat & Escalate** – Rainfall scales up relentlessly. Survive 20 rounds to “secure” the city, then push further in endless mode to chase high scores and experiment with new layouts.
+
 ## Project Layout
 
 - `scripts/` – Core gameplay scripts (grid, facilities, rain, shop, localization, save/load, UI wiring).

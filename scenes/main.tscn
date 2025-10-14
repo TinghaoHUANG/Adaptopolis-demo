@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bu4u6yl2516gu"]
+[gd_scene load_steps=15 format=3 uid="uid://bu4u6yl2516gu"]
 
 [ext_resource type="Script" uid="uid://bm2gb3olffh6w" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" uid="uid://b27vm1jwb1mby" path="res://scripts/ui_manager.gd" id="2"]
@@ -10,6 +10,20 @@
 [ext_resource type="Texture2D" uid="uid://bwgtx8cy6h8xb" path="res://icons/ground/building_1.png" id="8"]
 [ext_resource type="Texture2D" uid="uid://d0btlqsccauvc" path="res://icons/ground/water_1.png" id="9"]
 [ext_resource type="Script" uid="uid://cn72gxq60j1ow" path="res://scripts/card_bar.gd" id="10"]
+[ext_resource type="Texture2D" uid="uid://bc4hhn5h58jhx" path="res://icons/background/cover_page.png" id="11"]
+[ext_resource type="Texture2D" uid="uid://cbdwi13odyils" path="res://icons/button/start_1.png" id="12"]
+[ext_resource type="Texture2D" uid="uid://dvttqbunav5m5" path="res://icons/button/nextround_1.png" id="13"]
+
+[sub_resource type="StyleBoxFlat" id="StyleStartPanel"]
+content_margin_left = 24.0
+content_margin_top = 16.0
+content_margin_right = 24.0
+content_margin_bottom = 16.0
+bg_color = Color(0, 0, 0, 0.45)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
 
 [node name="Main" type="Node"]
 script = ExtResource("1")
@@ -19,7 +33,7 @@ grid_display_path = NodePath("UI/GridDisplay")
 shop_display_path = NodePath("UI/ShopPanel")
 status_label_path = NodePath("UI/HUD/StatusLabel")
 start_menu_path = NodePath("UI/StartMenu")
-start_button_path = NodePath("UI/StartMenu/Menu/VBox/StartButton")
+start_button_path = NodePath("UI/StartMenu/Menu/VBox/StartButtonPanel/StartButton")
 hud_container_path = NodePath("UI/HUD")
 shop_panel_path = NodePath("UI/ShopPanel")
 restart_button_path = NodePath("UI/HUD/RestartButton")
@@ -169,25 +183,30 @@ offset_bottom = -8.0
 text = "Rain Forecast
 Range: ? - ?"
 
-[node name="NextRoundButton" type="Button" parent="UI/HUD"]
+[node name="NextRoundButton" type="TextureButton" parent="UI/HUD"]
+custom_minimum_size = Vector2(110, 35)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 137.0
-offset_right = -24.0
-offset_bottom = 173.0
+offset_left = -3.0
+offset_top = 163.0
+offset_right = 137.0
+offset_bottom = 273.0
 grow_horizontal = 2
-text = "Next Round"
+scale = Vector2(0.6, 0.6)
+focus_mode = 0
+texture_normal = ExtResource("13")
+stretch_mode = 3
 
 [node name="StatusLabel" type="Label" parent="UI/HUD"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -1.0
-offset_top = 245.0
-offset_right = -1.0
-offset_bottom = 233.0
+offset_left = 1.0
+offset_top = 298.0
+offset_right = 1.0
+offset_bottom = 286.0
 grow_horizontal = 2
 grow_vertical = 2
 text = "Welcome to Adaptopolis!"
@@ -197,9 +216,10 @@ autowrap_mode = 2
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 184.0
-offset_right = -23.0
-offset_bottom = 220.0
+offset_left = -4.0
+offset_top = 242.0
+offset_right = -27.0
+offset_bottom = 278.0
 grow_horizontal = 2
 text = "Restart"
 
@@ -320,11 +340,19 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="CoverBackground" type="TextureRect" parent="UI/StartMenu"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("11")
+stretch_mode = 5
+
 [node name="Backdrop" type="ColorRect" parent="UI/StartMenu"]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.7)
+color = Color(0, 0, 0, 0.45)
 
 [node name="Menu" type="CenterContainer" parent="UI/StartMenu"]
 layout_mode = 1
@@ -352,10 +380,18 @@ text = "Build resilient infrastructure before the storms arrive."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="StartButton" type="Button" parent="UI/StartMenu/Menu/VBox"]
+[node name="StartButtonPanel" type="PanelContainer" parent="UI/StartMenu/Menu/VBox"]
+custom_minimum_size = Vector2(320, 160)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Start Game"
+theme_override_styles/panel = SubResource("StyleStartPanel")
+
+[node name="StartButton" type="TextureButton" parent="UI/StartMenu/Menu/VBox/StartButtonPanel"]
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+texture_normal = ExtResource("12")
+stretch_mode = 3
 
 [node name="HintLabel" type="Label" parent="UI/StartMenu/Menu/VBox"]
 layout_mode = 2

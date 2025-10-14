@@ -57,13 +57,13 @@ var save_manager: SaveManager
 var grid_display: GridDisplay = null
 var shop_display: ShopDisplay = null
 var status_label: Label = null
-var next_round_button: Button = null
+var next_round_button: BaseButton = null
 var selected_offer_index: int = -1
 var selected_preview_facility: Facility = null
 var dragged_facility: Facility = null
 var dragged_original_origin: Vector2i = Vector2i.ZERO
 var start_menu: Control = null
-var start_button: Button = null
+var start_button: BaseButton = null
 var hud_container: Control = null
 var shop_panel: Control = null
 var restart_button: Button = null
@@ -135,7 +135,7 @@ func _ready() -> void:
 
 	status_label = get_node_or_null(status_label_path) as Label
 	start_menu = get_node_or_null(start_menu_path) as Control
-	start_button = get_node_or_null(start_button_path) as Button
+	start_button = get_node_or_null(start_button_path) as BaseButton
 	hud_container = get_node_or_null(hud_container_path) as Control
 	shop_panel = get_node_or_null(shop_panel_path) as Control
 	restart_button = get_node_or_null(restart_button_path) as Button
@@ -685,7 +685,7 @@ func _input(event: InputEvent) -> void:
 
 func _bind_controls() -> void:
 	if not next_round_button_path.is_empty():
-		next_round_button = get_node_or_null(next_round_button_path) as Button
+		next_round_button = get_node_or_null(next_round_button_path) as BaseButton
 	if next_round_button:
 		var pressed_callable := Callable(self, "_on_next_round_pressed")
 		if next_round_button.is_connected("pressed", pressed_callable):
@@ -862,7 +862,7 @@ func _on_victory_endless_pressed() -> void:
 	_show_status("Endless mode engaged. Rain forecast: %s." % _format_forecast_range(forecast_range))
 	_update_button_state()
 
-func _connect_button(button: Button, method_name: String) -> void:
+func _connect_button(button: BaseButton, method_name: String) -> void:
 	if button == null:
 		return
 	var callable := Callable(self, method_name)
