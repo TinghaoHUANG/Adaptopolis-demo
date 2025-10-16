@@ -37,7 +37,7 @@ func _on_stats_changed() -> void:
 func update_round(round_number: int) -> void:
 	var label: Label = _get_label(round_label_path)
 	if label:
-		label.text = "%s %d" % [tr("ROUND_START"), round_number]
+		label.text = str(round_number)
 
 func update_health(health: int, max_health: int) -> void:
 	var label: Label = _get_label(health_label_path)
@@ -47,12 +47,12 @@ func update_health(health: int, max_health: int) -> void:
 func update_money(money_value) -> void:
 	var label: Label = _get_label(money_label_path)
 	if label:
-		label.text = "%s %s" % [tr("BUY_FACILITY"), _format_money(money_value)]
+		label.text = _format_money(money_value)
 
 func update_resilience(resilience: int) -> void:
 	var label: Label = _get_label(resilience_label_path)
 	if label:
-		label.text = "Resilience: %d" % resilience
+		label.text = str(resilience)
 
 func show_rain_report(report: Dictionary) -> void:
 	var hud: Node = _get_node(hud_path)

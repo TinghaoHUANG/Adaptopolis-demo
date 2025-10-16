@@ -548,12 +548,10 @@ func _show_facility_info(facility: Facility) -> void:
 	hovered_facility = facility
 	hovered_sell_price = _calculate_sell_price(facility)
 	_position_facility_info(facility)
-	var dots := facility.get_type_dots()
-	var prefix := "%s " % dots if not dots.is_empty() else ""
 	if facility_info_panel:
 		facility_info_panel.visible = true
 	if facility_info_title:
-		facility_info_title.text = "%s%s (Lv %d)" % [prefix, facility.name, facility.level]
+		facility_info_title.text = "%s (Lv %d)" % [facility.name, facility.level]
 	if facility_info_details:
 		var lines: Array[String] = []
 		if facility.description != "":
@@ -561,9 +559,10 @@ func _show_facility_info(facility: Facility) -> void:
 			lines.append("")
 		lines.append("[b]Resilience:[/b] %d" % facility.resilience)
 		lines.append("[b]Level:[/b] %d" % facility.level)
+		lines.append("[b]Type:[/b] %s" % facility.type.capitalize())
 		facility_info_details.bbcode_text = "\n".join(lines)
 	if facility_info_sell_button:
-		facility_info_sell_button.text = "Sell (💰%d)" % hovered_sell_price
+		facility_info_sell_button.text = "Sell (%d)" % hovered_sell_price
 		facility_info_sell_button.disabled = hovered_sell_price <= 0
 
 func _hide_facility_info() -> void:

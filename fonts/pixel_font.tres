@@ -1,0 +1,10 @@
+[gd_resource type="FontFile" load_steps=2 format=3 uid="uid://cucb0h6d6bhb2"]
+
+[ext_resource type="FontData" path="res://fonts/PixeloidSans.ttf" id="1"]
+
+[resource]
+data = ExtResource("1")
+antialiasing = 0
+hinting = 0
+generate_mipmaps = false
+multichannel_signed_distance_field = false

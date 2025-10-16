@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bu4u6yl2516gu"]
+[gd_scene load_steps=39 format=3 uid="uid://bu4u6yl2516gu"]
 
 [ext_resource type="Script" uid="uid://bm2gb3olffh6w" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" uid="uid://b27vm1jwb1mby" path="res://scripts/ui_manager.gd" id="2"]
@@ -10,47 +10,353 @@
 [ext_resource type="Texture2D" uid="uid://bwgtx8cy6h8xb" path="res://icons/ground/building_1.png" id="8"]
 [ext_resource type="Texture2D" uid="uid://d0btlqsccauvc" path="res://icons/ground/water_1.png" id="9"]
 [ext_resource type="Script" uid="uid://cn72gxq60j1ow" path="res://scripts/card_bar.gd" id="10"]
-[ext_resource type="Texture2D" uid="uid://bc4hhn5h58jhx" path="res://icons/background/cover_page.png" id="11"]
-[ext_resource type="Texture2D" uid="uid://cbdwi13odyils" path="res://icons/button/start_1.png" id="12"]
-[ext_resource type="Texture2D" uid="uid://dvttqbunav5m5" path="res://icons/button/nextround_1.png" id="13"]
 
-[sub_resource type="StyleBoxFlat" id="StyleStartPanel"]
-content_margin_left = 24.0
+[sub_resource type="Gradient" id="GradientBackground"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(0.101961, 0.101961, 0.180392, 1, 0.0862745, 0.121569, 0.243137, 1, 0.0588235, 0.203922, 0.376471, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientBackgroundTexture"]
+gradient = SubResource("GradientBackground")
+width = 2048
+height = 2048
+fill = 1
+fill_to = Vector2(1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StylePanelCardInfo"]
+content_margin_left = 16.0
 content_margin_top = 16.0
-content_margin_right = 24.0
+content_margin_right = 16.0
 content_margin_bottom = 16.0
-bg_color = Color(0, 0, 0, 0.45)
+bg_color = Color(0.0470588, 0.0705882, 0.12549, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.109804, 0.737255, 0.870588, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.109804, 0.737255, 0.870588, 0.35)
+shadow_size = 16
+
+[sub_resource type="StyleBoxFlat" id="StylePanelCardBar"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.0588235, 0.0784314, 0.133333, 0.94)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.92549, 0.282353, 0.6, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0.92549, 0.282353, 0.6, 0.4)
+shadow_size = 20
+
+[sub_resource type="StyleBoxFlat" id="StylePanelStats"]
+content_margin_left = 16.0
+content_margin_top = 20.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.0470588, 0.0627451, 0.117647, 0.96)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.658824, 0.333333, 0.933333, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.658824, 0.333333, 0.933333, 0.35)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StylePanelForecast"]
+content_margin_left = 16.0
+content_margin_top = 20.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.0470588, 0.0666667, 0.12549, 0.96)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.235294, 0.564706, 0.933333, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.235294, 0.564706, 0.933333, 0.35)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StylePanelStatus"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.0470588, 0.0705882, 0.12549, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.0862745, 0.717647, 0.839216, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.0862745, 0.717647, 0.839216, 0.3)
+shadow_size = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnPrimaryHover"]
+bg_color = Color(0.121569, 0.745098, 0.490196, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnPrimaryDisabled"]
+bg_color = Color(0.152941, 0.254902, 0.207843, 0.7)
+border_color = Color(0.0823529, 0.141176, 0.113725, 0.7)
+shadow_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnPrimaryPressed"]
+bg_color = Color(0.0588235, 0.415686, 0.266667, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnPrimaryNormal"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.0901961, 0.639216, 0.415686, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.0627451, 0.27451, 0.192157, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.0509804, 0.243137, 0.164706, 1)
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnDangerHover"]
+bg_color = Color(0.858824, 0.266667, 0.266667, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnDangerDisabled"]
+bg_color = Color(0.2, 0.0823529, 0.0823529, 0.7)
+border_color = Color(0.141176, 0.0352941, 0.0352941, 0.7)
+shadow_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnDangerPressed"]
+bg_color = Color(0.501961, 0.117647, 0.117647, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnDangerNormal"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.741176, 0.219608, 0.219608, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.301961, 0.0588235, 0.0588235, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.301961, 0.0588235, 0.0588235, 1)
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StylePanelBoard"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(0.0509804, 0.0705882, 0.12549, 0.96)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.2, 0.529412, 0.960784, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0.2, 0.529412, 0.960784, 0.35)
+shadow_size = 24
+
+[sub_resource type="StyleBoxFlat" id="StylePanelShop"]
+content_margin_left = 18.0
+content_margin_top = 20.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
+bg_color = Color(0.0509804, 0.0705882, 0.117647, 0.96)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.0980392, 0.72549, 0.505882, 1)
 corner_radius_top_left = 18
 corner_radius_top_right = 18
 corner_radius_bottom_right = 18
 corner_radius_bottom_left = 18
+shadow_color = Color(0.0980392, 0.72549, 0.505882, 0.35)
+shadow_size = 20
+
+[sub_resource type="StyleBoxFlat" id="StylePanelShopDetail"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.0705882, 0.0941176, 0.156863, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.278431, 0.34902, 0.45098, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.25)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnSecondaryHover"]
+bg_color = Color(0.329412, 0.396078, 0.529412, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnSecondaryDisabled"]
+bg_color = Color(0.160784, 0.2, 0.282353, 0.7)
+border_color = Color(0.0784314, 0.101961, 0.145098, 0.7)
+shadow_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnSecondaryPressed"]
+bg_color = Color(0.203922, 0.254902, 0.356863, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnSecondaryNormal"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.258824, 0.321569, 0.443137, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.0901961, 0.117647, 0.176471, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.0901961, 0.117647, 0.176471, 1)
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnAccentHover"]
+bg_color = Color(0.168627, 0.521569, 0.854902, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnAccentDisabled"]
+bg_color = Color(0.117647, 0.227451, 0.356863, 0.7)
+border_color = Color(0.0705882, 0.137255, 0.219608, 0.7)
+shadow_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnAccentPressed"]
+bg_color = Color(0.0941176, 0.301961, 0.521569, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBtnAccentNormal"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.12549, 0.427451, 0.760784, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.0666667, 0.164706, 0.396078, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.0666667, 0.164706, 0.396078, 1)
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StylePanelFacilityInfo"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.0470588, 0.0705882, 0.12549, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.192157, 0.72549, 0.847059, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0.192157, 0.72549, 0.847059, 0.35)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StylePanelVictory"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(0.0470588, 0.0666667, 0.121569, 0.97)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.94902, 0.72549, 0.301961, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.94902, 0.72549, 0.301961, 0.35)
+shadow_size = 22
 
 [node name="Main" type="Node"]
 script = ExtResource("1")
 ui_manager_path = NodePath("UI/UIManager")
-next_round_button_path = NodePath("UI/HUD/NextRoundButton")
-grid_display_path = NodePath("UI/GridDisplay")
+next_round_button_path = NodePath("UI/HUD/VBox/NextRoundButton")
+grid_display_path = NodePath("UI/BoardPanel/Margin/BoardContainer/GridDisplay")
 shop_display_path = NodePath("UI/ShopPanel")
-status_label_path = NodePath("UI/HUD/StatusLabel")
+status_label_path = NodePath("UI/HUD/VBox/StatusPanel/Margin/StatusLabel")
 start_menu_path = NodePath("UI/StartMenu")
-start_button_path = NodePath("UI/StartMenu/Menu/VBox/StartButtonPanel/StartButton")
+start_button_path = NodePath("UI/StartMenu/Menu/VBox/StartButton")
 hud_container_path = NodePath("UI/HUD")
 shop_panel_path = NodePath("UI/ShopPanel")
-restart_button_path = NodePath("UI/HUD/RestartButton")
+restart_button_path = NodePath("UI/HUD/VBox/RestartButton")
 victory_menu_path = NodePath("UI/VictoryMenu")
-victory_label_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/VictoryLabel")
-victory_restart_button_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/Buttons/RestartButton")
-victory_endless_button_path = NodePath("UI/VictoryMenu/Menu/Panel/VBox/Buttons/EndlessButton")
+victory_label_path = NodePath("UI/VictoryMenu/Menu/Panel/Margin/VBox/VictoryLabel")
+victory_restart_button_path = NodePath("UI/VictoryMenu/Menu/Panel/Margin/VBox/Buttons/RestartButton")
+victory_endless_button_path = NodePath("UI/VictoryMenu/Menu/Panel/Margin/VBox/Buttons/EndlessButton")
 facility_info_panel_path = NodePath("UI/FacilityInfo")
 facility_info_title_path = NodePath("UI/FacilityInfo/Margin/VBox/Title")
 facility_info_details_path = NodePath("UI/FacilityInfo/Margin/VBox/Details")
 facility_info_sell_button_path = NodePath("UI/FacilityInfo/Margin/VBox/SellButton")
 card_bar_path = NodePath("UI/CardBar")
 card_info_panel_path = NodePath("UI/CardInfo")
-card_info_title_path = NodePath("UI/CardInfo/Margin/VBox/Title")
+card_info_title_path = NodePath("UI/CardInfo/Margin/VBox/Header/Title")
 card_info_details_path = NodePath("UI/CardInfo/Margin/VBox/Details")
 
 [node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Background" type="TextureRect" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -521.0
+offset_right = 64.0
+offset_bottom = 447.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("GradientBackgroundTexture")
+stretch_mode = 5
 
 [node name="CardInfo" type="PanelContainer" parent="UI"]
 visible = false
@@ -59,179 +365,387 @@ z_as_relative = false
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -360.0
-offset_top = 144.0
-offset_right = -16.0
-offset_bottom = 360.0
+offset_left = -540.0
+offset_top = 136.0
+offset_right = -24.0
+offset_bottom = 536.0
 grow_horizontal = 0
+theme_override_styles/panel = SubResource("StylePanelCardInfo")
 
 [node name="Margin" type="MarginContainer" parent="UI/CardInfo"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_bottom = 20
 
 [node name="VBox" type="VBoxContainer" parent="UI/CardInfo/Margin"]
 layout_mode = 2
-alignment = 1
+theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="UI/CardInfo/Margin/VBox"]
+[node name="Header" type="HBoxContainer" parent="UI/CardInfo/Margin/VBox"]
 layout_mode = 2
-text = "Card"
-horizontal_alignment = 1
+theme_override_constants/separation = 8
+
+[node name="HeaderIcon" type="Label" parent="UI/CardInfo/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.823529, 0.968627, 0.992157, 1)
+text = "✶"
+
+[node name="Title" type="Label" parent="UI/CardInfo/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.823529, 0.968627, 0.992157, 1)
+theme_override_font_sizes/font_size = 32
+text = "CARD DETAILS"
+
+[node name="Divider" type="ColorRect" parent="UI/CardInfo/Margin/VBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.109804, 0.737255, 0.870588, 0.4)
 
 [node name="Details" type="RichTextLabel" parent="UI/CardInfo/Margin/VBox"]
-custom_minimum_size = Vector2(220, 80)
+custom_minimum_size = Vector2(440, 160)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/default_color = Color(0.792157, 0.905882, 0.980392, 1)
 bbcode_enabled = true
 scroll_active = false
 
 [node name="CardBar" type="PanelContainer" parent="UI"]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 16.0
-offset_top = 8.0
-offset_right = -16.0
-offset_bottom = 128.0
+offset_left = 499.0
+offset_top = 16.0
+offset_right = -24.0
+offset_bottom = 197.0
 grow_horizontal = 2
+theme_override_styles/panel = SubResource("StylePanelCardBar")
 script = ExtResource("10")
 cards_container_path = NodePath("Margin/VBox/CardsContainer")
 empty_label_path = NodePath("Margin/VBox/EmptyLabel")
 
 [node name="Margin" type="MarginContainer" parent="UI/CardBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
 
 [node name="VBox" type="VBoxContainer" parent="UI/CardBar/Margin"]
 layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="UI/CardBar/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
 alignment = 1
 
-[node name="Title" type="Label" parent="UI/CardBar/Margin/VBox"]
+[node name="HeaderIcon" type="Label" parent="UI/CardBar/Margin/VBox/Header"]
 layout_mode = 2
-text = "Card Bar"
-horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.976471, 0.635294, 0.866667, 1)
+theme_override_font_sizes/font_size = 32
+text = "✦"
+
+[node name="HeaderTitle" type="Label" parent="UI/CardBar/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.976471, 0.635294, 0.866667, 1)
+theme_override_font_sizes/font_size = 16
+text = "CARD BAR"
+uppercase = true
+
+[node name="Divider" type="ColorRect" parent="UI/CardBar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.92549, 0.282353, 0.6, 0.35)
 
 [node name="EmptyLabel" type="Label" parent="UI/CardBar/Margin/VBox"]
 layout_mode = 2
-text = "No cards unlocked."
+theme_override_colors/font_color = Color(0.588235, 0.627451, 0.72549, 1)
+theme_override_font_sizes/font_size = 16
+text = "NO CARDS UNLOCKED"
 horizontal_alignment = 1
 
 [node name="CardsContainer" type="HBoxContainer" parent="UI/CardBar/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_constants/separation = 12
 alignment = 1
 
 [node name="HUD" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 24.0
-offset_top = 144.0
-offset_right = 304.0
-offset_bottom = 324.0
+offset_left = 34.0
+offset_top = 39.0
+offset_right = 413.0
+offset_bottom = 850.0
 script = ExtResource("3")
-rain_report_label_path = NodePath("RainPanel/RainReportLabel")
+rain_report_label_path = NodePath("VBox/ForecastPanel/Margin/VBox/ForecastRange")
 
-[node name="StatsContainer" type="VBoxContainer" parent="UI/HUD"]
-layout_mode = 0
-offset_top = -129.0
-offset_right = 256.0
-offset_bottom = -16.0
-
-[node name="RoundLabel" type="Label" parent="UI/HUD/StatsContainer"]
+[node name="VBox" type="VBoxContainer" parent="UI/HUD"]
 layout_mode = 2
-text = "Round: 1"
+offset_left = 5.0
+offset_top = 16.0
+offset_right = 234.0
+offset_bottom = 763.0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 16
 
-[node name="HealthLabel" type="Label" parent="UI/HUD/StatsContainer"]
+[node name="StatsPanel" type="PanelContainer" parent="UI/HUD/VBox"]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "♥Health: 20/20"
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StylePanelStats")
 
-[node name="MoneyLabel" type="Label" parent="UI/HUD/StatsContainer"]
+[node name="Margin" type="MarginContainer" parent="UI/HUD/VBox/StatsPanel"]
 layout_mode = 2
-text = "Funds: 30"
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
 
-[node name="ResilienceLabel" type="Label" parent="UI/HUD/StatsContainer"]
+[node name="StatsList" type="VBoxContainer" parent="UI/HUD/VBox/StatsPanel/Margin"]
 layout_mode = 2
-text = "Resilience: 0"
+theme_override_constants/separation = 10
 
-[node name="RainPanel" type="Panel" parent="UI/HUD"]
-layout_mode = 0
-offset_top = 5.0
-offset_right = 256.0
-offset_bottom = 102.0
+[node name="StatsBadge" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92549, 0.768627, 0.988235, 1)
+theme_override_font_sizes/font_size = 16
+text = "STATS"
 
-[node name="RainTitle" type="Label" parent="UI/HUD/RainPanel"]
-layout_mode = 0
-anchor_right = 1.0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = -8.0
-text = "Rain Forecast"
+[node name="StatsDivider" type="ColorRect" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.658824, 0.333333, 0.933333, 0.35)
 
-[node name="RainReportLabel" type="Label" parent="UI/HUD/RainPanel"]
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 32.0
-offset_right = -8.0
-offset_bottom = -8.0
-text = "Rain Forecast
-Range: ? - ?"
+[node name="RoundRow" type="HBoxContainer" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList"]
+layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="NextRoundButton" type="TextureButton" parent="UI/HUD"]
-custom_minimum_size = Vector2(110, 35)
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = -3.0
-offset_top = 163.0
-offset_right = 137.0
-offset_bottom = 273.0
-grow_horizontal = 2
-scale = Vector2(0.6, 0.6)
-focus_mode = 0
-texture_normal = ExtResource("13")
-stretch_mode = 3
+[node name="RoundIcon" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/RoundRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92549, 0.768627, 0.988235, 1)
+text = "⟳"
 
-[node name="StatusLabel" type="Label" parent="UI/HUD"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 1.0
-offset_top = 298.0
-offset_right = 1.0
-offset_bottom = 286.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="RoundTitle" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/RoundRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.835294, 0.8, 0.956863, 1)
+theme_override_font_sizes/font_size = 16
+text = "ROUND"
+
+[node name="RoundValue" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/RoundRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 0.870588, 0.482353, 1)
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 2
+
+[node name="HealthRow" type="HBoxContainer" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HealthIcon" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/HealthRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.992157, 0.54902, 0.635294, 1)
+text = "♥"
+
+[node name="HealthTitle" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/HealthRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.835294, 0.8, 0.956863, 1)
+theme_override_font_sizes/font_size = 16
+text = "HEALTH"
+
+[node name="HealthValue" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/HealthRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.992157, 0.54902, 0.635294, 1)
+theme_override_font_sizes/font_size = 16
+text = "20 / 20"
+horizontal_alignment = 2
+
+[node name="MoneyRow" type="HBoxContainer" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MoneyIcon" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/MoneyRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.988235, 0.815686, 0.317647, 1)
+text = "◎"
+
+[node name="MoneyTitle" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/MoneyRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.835294, 0.8, 0.956863, 1)
+theme_override_font_sizes/font_size = 16
+text = "FUNDS"
+
+[node name="MoneyValue" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/MoneyRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.988235, 0.815686, 0.317647, 1)
+theme_override_font_sizes/font_size = 16
+text = "30"
+horizontal_alignment = 2
+
+[node name="ResilienceRow" type="HBoxContainer" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ResilienceIcon" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/ResilienceRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.482353, 0.878431, 0.968627, 1)
+text = "🛡"
+
+[node name="ResilienceTitle" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/ResilienceRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.835294, 0.8, 0.956863, 1)
+theme_override_font_sizes/font_size = 16
+text = "DEFENSE"
+
+[node name="ResilienceValue" type="Label" parent="UI/HUD/VBox/StatsPanel/Margin/StatsList/ResilienceRow"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.482353, 0.878431, 0.968627, 1)
+theme_override_font_sizes/font_size = 16
+text = "0"
+horizontal_alignment = 2
+
+[node name="ForecastPanel" type="PanelContainer" parent="UI/HUD/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StylePanelForecast")
+
+[node name="Margin" type="MarginContainer" parent="UI/HUD/VBox/ForecastPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="UI/HUD/VBox/ForecastPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ForecastBadge" type="Label" parent="UI/HUD/VBox/ForecastPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.592157, 0.788235, 0.980392, 1)
+theme_override_font_sizes/font_size = 16
+text = "FORECAST"
+
+[node name="ForecastDivider" type="ColorRect" parent="UI/HUD/VBox/ForecastPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.235294, 0.564706, 0.933333, 0.35)
+
+[node name="ForecastTitle" type="Label" parent="UI/HUD/VBox/ForecastPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.870588, 0.992157, 1)
+theme_override_font_sizes/font_size = 16
+text = "Storm Damage"
+
+[node name="ForecastRange" type="Label" parent="UI/HUD/VBox/ForecastPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.858824, 0.403922, 1)
+theme_override_font_sizes/font_size = 32
+text = "5 - 10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusPanel" type="PanelContainer" parent="UI/HUD/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StylePanelStatus")
+
+[node name="Margin" type="MarginContainer" parent="UI/HUD/VBox/StatusPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="StatusLabel" type="Label" parent="UI/HUD/VBox/StatusPanel/Margin"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.658824, 0.933333, 0.984314, 1)
+theme_override_font_sizes/font_size = 16
 text = "Welcome to Adaptopolis!"
 autowrap_mode = 2
 
-[node name="RestartButton" type="Button" parent="UI/HUD"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = -4.0
-offset_top = 242.0
-offset_right = -27.0
-offset_bottom = 278.0
-grow_horizontal = 2
-text = "Restart"
+[node name="NextRoundButton" type="Button" parent="UI/HUD/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 32
+theme_override_styles/focus = SubResource("StyleBtnPrimaryHover")
+theme_override_styles/disabled = SubResource("StyleBtnPrimaryDisabled")
+theme_override_styles/hover = SubResource("StyleBtnPrimaryHover")
+theme_override_styles/pressed = SubResource("StyleBtnPrimaryPressed")
+theme_override_styles/normal = SubResource("StyleBtnPrimaryNormal")
+text = "NEXT ROUND"
 
-[node name="GridDisplay" type="GridContainer" parent="UI"]
+[node name="RestartButton" type="Button" parent="UI/HUD/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/focus = SubResource("StyleBtnDangerHover")
+theme_override_styles/disabled = SubResource("StyleBtnDangerDisabled")
+theme_override_styles/hover = SubResource("StyleBtnDangerHover")
+theme_override_styles/pressed = SubResource("StyleBtnDangerPressed")
+theme_override_styles/normal = SubResource("StyleBtnDangerNormal")
+text = "RESTART"
+
+[node name="BoardPanel" type="PanelContainer" parent="UI"]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -384.0
-offset_top = -384.0
-offset_right = 384.0
+offset_left = -452.0
+offset_top = -332.0
+offset_right = 434.0
+offset_bottom = 451.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StylePanelBoard")
+
+[node name="Margin" type="MarginContainer" parent="UI/BoardPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="BoardContainer" type="Control" parent="UI/BoardPanel/Margin"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="BoardBackground" type="ColorRect" parent="UI/BoardPanel/Margin/BoardContainer"]
+layout_mode = 2
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.0588235, 0.0823529, 0.145098, 0.94)
+
+[node name="GridDisplay" type="GridContainer" parent="UI/BoardPanel/Margin/BoardContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -391.0
+offset_top = -375.0
+offset_right = 442.0
 offset_bottom = 384.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -247,87 +761,162 @@ anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -331.0
-offset_top = -194.0
-offset_right = -24.0
-offset_bottom = 309.0
+offset_left = -426.0
+offset_top = -3.0
+offset_right = -23.0
+offset_bottom = 446.0
 grow_horizontal = 0
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StylePanelShop")
 script = ExtResource("5")
-offers_container_path = NodePath("MarginContainer/VBox/OfferList")
-detail_label_path = NodePath("MarginContainer/VBox/DetailLabel")
-skip_button_path = NodePath("MarginContainer/VBox/Controls/SkipButton")
-refresh_button_path = NodePath("MarginContainer/VBox/Controls/RefreshButton")
+offers_container_path = NodePath("Margin/VBox/OfferScroll/OfferList")
+detail_label_path = NodePath("Margin/VBox/DetailPanel/Margin/DetailLabel")
+skip_button_path = NodePath("Margin/VBox/Controls/SkipButton")
+refresh_button_path = NodePath("Margin/VBox/Controls/RefreshButton")
 
-[node name="MarginContainer" type="MarginContainer" parent="UI/ShopPanel"]
+[node name="Margin" type="MarginContainer" parent="UI/ShopPanel"]
 layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
 
-[node name="VBox" type="VBoxContainer" parent="UI/ShopPanel/MarginContainer"]
+[node name="VBox" type="VBoxContainer" parent="UI/ShopPanel/Margin"]
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 16
 
-[node name="ShopTitle" type="Label" parent="UI/ShopPanel/MarginContainer/VBox"]
+[node name="Header" type="HBoxContainer" parent="UI/ShopPanel/Margin/VBox"]
 layout_mode = 2
-text = "🛒 Shop"
-autowrap_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
 
-[node name="OfferList" type="VBoxContainer" parent="UI/ShopPanel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 200)
+[node name="HeaderIcon" type="Label" parent="UI/ShopPanel/Margin/VBox/Header"]
 layout_mode = 2
-size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.498039, 0.94902, 0.796078, 1)
+theme_override_font_sizes/font_size = 32
+text = "🛒"
 
-[node name="DetailLabel" type="Label" parent="UI/ShopPanel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 80)
+[node name="HeaderTitle" type="Label" parent="UI/ShopPanel/Margin/VBox/Header"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.498039, 0.94902, 0.796078, 1)
+theme_override_font_sizes/font_size = 16
+text = "SHOP"
+
+[node name="HeaderDivider" type="ColorRect" parent="UI/ShopPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.0980392, 0.72549, 0.505882, 0.35)
+
+[node name="OfferScroll" type="ScrollContainer" parent="UI/ShopPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+follow_focus = true
+
+[node name="OfferList" type="VBoxContainer" parent="UI/ShopPanel/Margin/VBox/OfferScroll"]
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 8
+
+[node name="DetailPanel" type="PanelContainer" parent="UI/ShopPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StylePanelShopDetail")
+
+[node name="Margin" type="MarginContainer" parent="UI/ShopPanel/Margin/VBox/DetailPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 20
+
+[node name="DetailLabel" type="Label" parent="UI/ShopPanel/Margin/VBox/DetailPanel/Margin"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.760784, 0.819608, 0.886275, 1)
+theme_override_font_sizes/font_size = 16
 text = "Select a facility, then click the grid to place it."
 autowrap_mode = 2
 
-[node name="Controls" type="HBoxContainer" parent="UI/ShopPanel/MarginContainer/VBox"]
+[node name="Controls" type="HBoxContainer" parent="UI/ShopPanel/Margin/VBox"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 4
+theme_override_constants/separation = 12
 
-[node name="SkipButton" type="Button" parent="UI/ShopPanel/MarginContainer/VBox/Controls"]
+[node name="SkipButton" type="Button" parent="UI/ShopPanel/Margin/VBox/Controls"]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Skip"
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/focus = SubResource("StyleBtnSecondaryHover")
+theme_override_styles/disabled = SubResource("StyleBtnSecondaryDisabled")
+theme_override_styles/hover = SubResource("StyleBtnSecondaryHover")
+theme_override_styles/pressed = SubResource("StyleBtnSecondaryPressed")
+theme_override_styles/normal = SubResource("StyleBtnSecondaryNormal")
+text = "SKIP"
 
-[node name="RefreshButton" type="Button" parent="UI/ShopPanel/MarginContainer/VBox/Controls"]
+[node name="RefreshButton" type="Button" parent="UI/ShopPanel/Margin/VBox/Controls"]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Refresh"
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/focus = SubResource("StyleBtnAccentHover")
+theme_override_styles/disabled = SubResource("StyleBtnAccentDisabled")
+theme_override_styles/hover = SubResource("StyleBtnAccentHover")
+theme_override_styles/pressed = SubResource("StyleBtnAccentPressed")
+theme_override_styles/normal = SubResource("StyleBtnAccentNormal")
+text = "REFRESH (5)"
 
 [node name="FacilityInfo" type="PanelContainer" parent="UI"]
-offset_left = 340.0
-offset_top = 140.0
-offset_right = 600.0
-offset_bottom = 420.0
+visible = false
+offset_left = 320.0
+offset_top = 480.0
+offset_right = 620.0
+offset_bottom = 720.0
+theme_override_styles/panel = SubResource("StylePanelFacilityInfo")
 
 [node name="Margin" type="MarginContainer" parent="UI/FacilityInfo"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
 
 [node name="VBox" type="VBoxContainer" parent="UI/FacilityInfo/Margin"]
 layout_mode = 2
+theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="UI/FacilityInfo/Margin/VBox"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.94902, 0.980392, 1)
+theme_override_font_sizes/font_size = 32
 text = "Facility"
-horizontal_alignment = 1
 
 [node name="Details" type="RichTextLabel" parent="UI/FacilityInfo/Margin/VBox"]
-custom_minimum_size = Vector2(220, 80)
+custom_minimum_size = Vector2(260, 120)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/default_color = Color(0.803922, 0.921569, 0.984314, 1)
 bbcode_enabled = true
 scroll_active = false
 
 [node name="SellButton" type="Button" parent="UI/FacilityInfo/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/focus = SubResource("StyleBtnDangerHover")
+theme_override_styles/disabled = SubResource("StyleBtnDangerDisabled")
+theme_override_styles/hover = SubResource("StyleBtnDangerHover")
+theme_override_styles/pressed = SubResource("StyleBtnDangerPressed")
+theme_override_styles/normal = SubResource("StyleBtnDangerNormal")
 text = "Sell"
 
 [node name="StartMenu" type="Control" parent="UI"]
@@ -340,19 +929,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CoverBackground" type="TextureRect" parent="UI/StartMenu"]
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-texture = ExtResource("11")
-stretch_mode = 5
-
 [node name="Backdrop" type="ColorRect" parent="UI/StartMenu"]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.45)
+color = Color(0, 0, 0, 0.72)
 
 [node name="Menu" type="CenterContainer" parent="UI/StartMenu"]
 layout_mode = 1
@@ -363,38 +944,63 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBox" type="VBoxContainer" parent="UI/StartMenu/Menu"]
-custom_minimum_size = Vector2(360, 220)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+theme_override_constants/separation = 18
 alignment = 1
 
 [node name="TitleLabel" type="Label" parent="UI/StartMenu/Menu/VBox"]
 layout_mode = 2
-text = "Adaptopolis"
+theme_override_colors/font_color = Color(0.988235, 0.807843, 0.317647, 1)
+theme_override_font_sizes/font_size = 48
+text = "ADAPTOPOLIS"
 horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="UI/StartMenu/Menu/VBox"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.901961, 0.933333, 0.972549, 1)
+theme_override_font_sizes/font_size = 16
 text = "Build resilient infrastructure before the storms arrive."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="StartButtonPanel" type="PanelContainer" parent="UI/StartMenu/Menu/VBox"]
-custom_minimum_size = Vector2(320, 160)
+[node name="Divider" type="ColorRect" parent="UI/StartMenu/Menu/VBox"]
+custom_minimum_size = Vector2(280, 3)
+layout_mode = 2
+color = Color(0.988235, 0.807843, 0.317647, 0.6)
+
+[node name="StartButton" type="Button" parent="UI/StartMenu/Menu/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_styles/panel = SubResource("StyleStartPanel")
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 32
+theme_override_styles/focus = SubResource("StyleBtnPrimaryHover")
+theme_override_styles/disabled = SubResource("StyleBtnPrimaryDisabled")
+theme_override_styles/hover = SubResource("StyleBtnPrimaryHover")
+theme_override_styles/pressed = SubResource("StyleBtnPrimaryPressed")
+theme_override_styles/normal = SubResource("StyleBtnPrimaryNormal")
+text = "START GAME"
 
-[node name="StartButton" type="TextureButton" parent="UI/StartMenu/Menu/VBox/StartButtonPanel"]
+[node name="HintPanel" type="PanelContainer" parent="UI/StartMenu/Menu/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-focus_mode = 0
-texture_normal = ExtResource("12")
-stretch_mode = 3
+theme_override_styles/panel = SubResource("StylePanelStatus")
 
-[node name="HintLabel" type="Label" parent="UI/StartMenu/Menu/VBox"]
+[node name="HintMargin" type="MarginContainer" parent="UI/StartMenu/Menu/VBox/HintPanel"]
 layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="HintLabel" type="Label" parent="UI/StartMenu/Menu/VBox/HintPanel/HintMargin"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.658824, 0.933333, 0.984314, 1)
+theme_override_font_sizes/font_size = 16
 text = "Survive 20 rounds to secure the city."
 horizontal_alignment = 1
 autowrap_mode = 2
@@ -420,52 +1026,81 @@ layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="Panel" type="Panel" parent="UI/VictoryMenu/Menu"]
-custom_minimum_size = Vector2(380, 240)
+[node name="Panel" type="PanelContainer" parent="UI/VictoryMenu/Menu"]
+custom_minimum_size = Vector2(420, 280)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StylePanelVictory")
 
-[node name="VBox" type="VBoxContainer" parent="UI/VictoryMenu/Menu/Panel"]
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = -16.0
+[node name="Margin" type="MarginContainer" parent="UI/VictoryMenu/Menu/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="UI/VictoryMenu/Menu/Panel/Margin"]
+layout_mode = 2
+size_flags_horizontal = 4
 size_flags_vertical = 4
+theme_override_constants/separation = 16
 alignment = 1
 
-[node name="VictoryLabel" type="Label" parent="UI/VictoryMenu/Menu/Panel/VBox"]
+[node name="VictoryLabel" type="Label" parent="UI/VictoryMenu/Menu/Panel/Margin/VBox"]
 layout_mode = 2
-text = "City secured!"
+theme_override_colors/font_color = Color(0.988235, 0.807843, 0.317647, 1)
+theme_override_font_sizes/font_size = 32
+text = "CITY SECURED!"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="SummaryLabel" type="Label" parent="UI/VictoryMenu/Menu/Panel/VBox"]
+[node name="SummaryLabel" type="Label" parent="UI/VictoryMenu/Menu/Panel/Margin/VBox"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.964706, 0.945098, 0.870588, 1)
+theme_override_font_sizes/font_size = 16
 text = "Choose how to proceed."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Buttons" type="HBoxContainer" parent="UI/VictoryMenu/Menu/Panel/VBox"]
+[node name="Divider" type="ColorRect" parent="UI/VictoryMenu/Menu/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-size_flags_horizontal = 4
-alignment = 1
+color = Color(0.94902, 0.72549, 0.301961, 0.35)
 
-[node name="RestartButton" type="Button" parent="UI/VictoryMenu/Menu/Panel/VBox/Buttons"]
+[node name="Buttons" type="HBoxContainer" parent="UI/VictoryMenu/Menu/Panel/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Restart"
+theme_override_constants/separation = 12
 
-[node name="EndlessButton" type="Button" parent="UI/VictoryMenu/Menu/Panel/VBox/Buttons"]
+[node name="RestartButton" type="Button" parent="UI/VictoryMenu/Menu/Panel/Margin/VBox/Buttons"]
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Continue Endless"
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/focus = SubResource("StyleBtnDangerHover")
+theme_override_styles/disabled = SubResource("StyleBtnDangerDisabled")
+theme_override_styles/hover = SubResource("StyleBtnDangerHover")
+theme_override_styles/pressed = SubResource("StyleBtnDangerPressed")
+theme_override_styles/normal = SubResource("StyleBtnDangerNormal")
+text = "RESTART"
+
+[node name="EndlessButton" type="Button" parent="UI/VictoryMenu/Menu/Panel/Margin/VBox/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/focus = SubResource("StyleBtnPrimaryHover")
+theme_override_styles/disabled = SubResource("StyleBtnPrimaryDisabled")
+theme_override_styles/hover = SubResource("StyleBtnPrimaryHover")
+theme_override_styles/pressed = SubResource("StyleBtnPrimaryPressed")
+theme_override_styles/normal = SubResource("StyleBtnPrimaryNormal")
+text = "CONTINUE ENDLESS"
 
 [node name="UIManager" type="Node" parent="UI"]
 script = ExtResource("2")
 hud_path = NodePath("../HUD")
-round_label_path = NodePath("../HUD/StatsContainer/RoundLabel")
-health_label_path = NodePath("../HUD/StatsContainer/HealthLabel")
-money_label_path = NodePath("../HUD/StatsContainer/MoneyLabel")
-resilience_label_path = NodePath("../HUD/StatsContainer/ResilienceLabel")
+round_label_path = NodePath("../HUD/VBox/StatsPanel/Margin/StatsList/RoundRow/RoundValue")
+health_label_path = NodePath("../HUD/VBox/StatsPanel/Margin/StatsList/HealthRow/HealthValue")
+money_label_path = NodePath("../HUD/VBox/StatsPanel/Margin/StatsList/MoneyRow/MoneyValue")
+resilience_label_path = NodePath("../HUD/VBox/StatsPanel/Margin/StatsList/ResilienceRow/ResilienceValue")
