@@ -100,7 +100,9 @@ var card_info_details: RichTextLabel = null
 var card_hover_timer: Timer = null
 var card_info_hide_timer: Timer = null
 var pending_hover_card: Dictionary = {}
+var pending_hover_card_source: Control = null
 var card_info_hovered: bool = false
+var card_info_target_control: Control = null
 var ui_layer: CanvasLayer = null
 var base_resolution: Vector2 = Vector2(
 	float(ProjectSettings.get_setting("display/window/size/viewport_width", 1920)),
@@ -122,6 +124,7 @@ const CARD_ADJACENT_DIRECTIONS := [
 	Vector2i.LEFT,
 	Vector2i.RIGHT
 ]
+const CARD_INFO_MARGIN := 12.0
 
 func _ready() -> void:
 	city_state = _ensure_node(city_state_path, CityState) as CityState
@@ -158,6 +161,14 @@ func _ready() -> void:
 	if facility_info_sell_button:
 		facility_info_sell_button.connect("pressed", Callable(self, "_on_facility_sell_pressed"))
 	if card_info_panel:
+		card_info_panel.anchor_left = 0.0
+		card_info_panel.anchor_top = 0.0
+		card_info_panel.anchor_right = 0.0
+		card_info_panel.anchor_bottom = 0.0
+		card_info_panel.offset_left = 0.0
+		card_info_panel.offset_top = 0.0
+		card_info_panel.offset_right = 0.0
+		card_info_panel.offset_bottom = 0.0
 		card_info_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 		card_info_panel.visible = false
 		card_info_panel.z_index = 200
@@ -1073,11 +1084,16 @@ func _hover_cancel_card_schedule() -> void:
 	if card_info_hide_timer:
 		card_info_hide_timer.stop()
 	pending_hover_card = {}
+	pending_hover_card_source = null
 	card_info_hovered = false
 
-func _show_card_info(card_info: Dictionary) -> void:
+func _show_card_info(card_info: Dictionary, source: Control = null) -> void:
 	if card_info_panel == null:
 		return
+	if source != null:
+		card_info_target_control = source
+	elif card_info_target_control == null and pending_hover_card_source != null:
+		card_info_target_control = pending_hover_card_source
 	var title := String(card_info.get("name", "Card"))
 	var description := String(card_info.get("description", ""))
 	if description.is_empty():
@@ -1087,28 +1103,35 @@ func _show_card_info(card_info: Dictionary) -> void:
 	if card_info_details:
 		card_info_details.bbcode_text = description
 	card_info_panel.visible = true
+	card_info_panel.reset_size()
+	_position_card_info(card_info_target_control)
 	card_info_hovered = false
 
 func _hide_card_info() -> void:
 	if card_info_panel:
 		card_info_panel.visible = false
 	card_info_hovered = false
+	card_info_target_control = null
+	pending_hover_card_source = null
 
-func _on_card_hovered(card_info: Dictionary) -> void:
+func _on_card_hovered(card_info: Dictionary, card_widget: Control) -> void:
 	if card_info.is_empty():
 		return
 	pending_hover_card = card_info.duplicate(true)
+	pending_hover_card_source = card_widget
 	if card_info_hide_timer:
 		card_info_hide_timer.stop()
 	if card_hover_timer:
 		card_hover_timer.stop()
 	if hover_info_delay <= 0.0:
-		_show_card_info(pending_hover_card)
+		_show_card_info(pending_hover_card, pending_hover_card_source)
 	else:
 		card_hover_timer.start(hover_info_delay)
 
-func _on_card_hover_exited(_card_info: Dictionary) -> void:
+func _on_card_hover_exited(_card_info: Dictionary, card_widget: Control) -> void:
 	pending_hover_card = {}
+	if pending_hover_card_source == card_widget:
+		pending_hover_card_source = null
 	if card_hover_timer:
 		card_hover_timer.stop()
 	if card_info_panel and card_info_panel.visible:
@@ -1118,8 +1141,9 @@ func _on_card_hover_exited(_card_info: Dictionary) -> void:
 func _on_card_hover_timeout() -> void:
 	if pending_hover_card.is_empty():
 		return
-	_show_card_info(pending_hover_card)
+	_show_card_info(pending_hover_card, pending_hover_card_source)
 	pending_hover_card = {}
+	pending_hover_card_source = null
 
 func _on_card_info_mouse_entered() -> void:
 	card_info_hovered = true
@@ -1139,6 +1163,32 @@ func _on_card_info_hide_timeout() -> void:
 	if card_info_hovered:
 		return
 	_hide_card_info()
+
+func _position_card_info(source: Control) -> void:
+	if card_info_panel == null:
+		return
+	if source != null and not is_instance_valid(source):
+		source = null
+	var viewport := get_viewport()
+	var viewport_rect := viewport.get_visible_rect()
+	var panel_size := card_info_panel.size
+	if panel_size == Vector2.ZERO:
+		panel_size = card_info_panel.get_combined_minimum_size()
+	var desired_pos := viewport.get_mouse_position() + Vector2(CARD_INFO_MARGIN, CARD_INFO_MARGIN)
+	if source != null:
+		var card_rect := source.get_global_rect()
+		desired_pos = card_rect.position + Vector2(card_rect.size.x + CARD_INFO_MARGIN, 0.0)
+		if desired_pos.x + panel_size.x > viewport_rect.size.x - CARD_INFO_MARGIN:
+			desired_pos.x = card_rect.position.x - panel_size.x - CARD_INFO_MARGIN
+	var max_x := viewport_rect.size.x - panel_size.x - CARD_INFO_MARGIN
+	var max_y := viewport_rect.size.y - panel_size.y - CARD_INFO_MARGIN
+	if max_x < CARD_INFO_MARGIN:
+		max_x = CARD_INFO_MARGIN
+	if max_y < CARD_INFO_MARGIN:
+		max_y = CARD_INFO_MARGIN
+	desired_pos.x = clampf(desired_pos.x, CARD_INFO_MARGIN, max_x)
+	desired_pos.y = clampf(desired_pos.y, CARD_INFO_MARGIN, max_y)
+	card_info_panel.global_position = desired_pos
 
 func _on_window_size_changed() -> void:
 	_update_ui_scale()

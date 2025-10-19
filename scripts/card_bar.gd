@@ -9,8 +9,8 @@ class_name CardBar
 extends PanelContainer
 
 
-signal card_hovered(card_info: Dictionary)
-signal card_hover_exited(card_info: Dictionary)
+signal card_hovered(card_info: Dictionary, card_widget: Control)
+signal card_hover_exited(card_info: Dictionary, card_widget: Control)
 
 @export var cards_container_path: NodePath
 @export var empty_label_path: NodePath
@@ -58,9 +58,9 @@ func _create_card_widget(card: Dictionary) -> Control:
 func _on_card_mouse_entered(source: Control) -> void:
 	var info: Variant = source.get_meta("card_info")
 	if typeof(info) == TYPE_DICTIONARY:
-		emit_signal("card_hovered", info)
+		emit_signal("card_hovered", info, source)
 
 func _on_card_mouse_exited(source: Control) -> void:
 	var info: Variant = source.get_meta("card_info")
 	if typeof(info) == TYPE_DICTIONARY:
-		emit_signal("card_hover_exited", info)
+		emit_signal("card_hover_exited", info, source)

@@ -1,0 +1,9 @@
+[gd_resource type="FontFile" load_steps=2 format=3]
+
+[ext_resource path="res://fonts/VT323-Regular.ttf" type="FontData" id="1"]
+
+[resource]
+font_data = ExtResource("1")
+fixed_size = 28
+antialiasing = 0
+subpixel_positioning = 0
