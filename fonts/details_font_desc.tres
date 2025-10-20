@@ -1,0 +1,14 @@
+[gd_resource type="FontFile" load_steps=2 format=3 uid="uid://c7f0govhamoiu"]
+
+[ext_resource type="FontFile" uid="uid://clkkpf7jgaj8c" path="res://fonts/VT323-Regular.ttf" id="1"]
+
+[resource]
+fallbacks = Array[Font]([ExtResource("1")])
+antialiasing = 0
+subpixel_positioning = 0
+fixed_size = 28
+cache/0/28/0/ascent = 0.0
+cache/0/28/0/descent = 0.0
+cache/0/28/0/underline_position = 0.0
+cache/0/28/0/underline_thickness = 0.0
+cache/0/28/0/scale = 1.0

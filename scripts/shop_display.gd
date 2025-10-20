@@ -32,6 +32,12 @@ const LEVEL3_HIGHLIGHT: Color = Color(0.96, 0.80, 0.30, 1.0)
 const LEVEL_BORDER_WIDTH: int = 3
 const NO_HIGHLIGHT: Color = Color(0, 0, 0, 0)
 const BASE_BUTTON_COLOR: Color = Color(0.24, 0.27, 0.33)
+const OFFER_TITLE_FONT: FontFile = preload("res://fonts/pixel_font.tres")
+const OFFER_TITLE_FONT_SIZE: int = 16
+const OFFER_STATS_FONT: FontFile = preload("res://fonts/pixel_font.tres")
+const OFFER_STATS_FONT_SIZE: int = 16
+const DETAIL_FONT: FontFile = preload("res://fonts/details_font_desc.tres")
+const DETAIL_FONT_SIZE: int = 28
 
 func _ready() -> void:
 	button_group.allow_unpress = true
@@ -45,6 +51,9 @@ func _ready() -> void:
 	if refresh_button:
 		refresh_button.text = "Refresh"
 		refresh_button.connect("pressed", Callable(self, "_on_refresh_pressed"))
+	if detail_label and DETAIL_FONT:
+		detail_label.add_theme_font_override("font", DETAIL_FONT)
+		detail_label.add_theme_font_size_override("font_size", DETAIL_FONT_SIZE)
 	_update_status_hint()
 
 func set_offers(new_offers: Array) -> void:
@@ -83,8 +92,36 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	button.button_group = button_group
 	button.focus_mode = Control.FOCUS_NONE
 	button.flat = false
-	button.custom_minimum_size = Vector2(0, 72)
-	button.text = _format_offer_summary(facility)
+	button.custom_minimum_size = Vector2(0, 110)
+	button.text = ""
+	var content := VBoxContainer.new()
+	content.name = "Summary"
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.alignment = BoxContainer.ALIGNMENT_BEGIN
+	content.add_theme_constant_override("separation", 8)
+	button.add_child(content)
+
+	var title_label := Label.new()
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_label.text = _format_offer_title(facility)
+	if OFFER_TITLE_FONT:
+		title_label.add_theme_font_override("font", OFFER_TITLE_FONT)
+		title_label.add_theme_font_size_override("font_size", OFFER_TITLE_FONT_SIZE)
+	content.add_child(title_label)
+
+	var stats_label := Label.new()
+	stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	stats_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stats_label.text = _format_offer_stats(facility)
+	if OFFER_STATS_FONT:
+		stats_label.add_theme_font_override("font", OFFER_STATS_FONT)
+		stats_label.add_theme_font_size_override("font_size", OFFER_STATS_FONT_SIZE)
+	content.add_child(stats_label)
 	_apply_offer_style(button, facility)
 	button.connect("toggled", Callable(self, "_on_offer_toggled").bind(index))
 	return button
@@ -128,27 +165,19 @@ func _get_level_highlight(level: int) -> Color:
 		return LEVEL2_HIGHLIGHT
 	return LEVEL3_HIGHLIGHT
 
-func _format_offer_summary(facility: Facility) -> String:
-	var lines: Array[String] = []
+func _format_offer_title(facility: Facility) -> String:
 	var dots := facility.get_type_dots()
 	var prefix := "%s " % dots if not dots.is_empty() else ""
-	lines.append("%s%s (Lv %d)" % [prefix, facility.name, facility.level])
-	lines.append("💰 %d    🛡️ %d" % [facility.cost, facility.resilience])
-	if facility.special_rule != "":
-		lines.append("📎 %s" % facility.special_rule)
-	return "\n".join(lines)
+	return "%s%s (Lv %d)" % [prefix, facility.name, facility.level]
+
+func _format_offer_stats(facility: Facility) -> String:
+	return "💰 %d    🛡️ %d" % [facility.cost, facility.resilience]
 
 func _build_detail_text(facility: Facility) -> String:
-	var parts: Array[String] = []
-	var dots := facility.get_type_dots()
-	var prefix := "%s " % dots if not dots.is_empty() else ""
-	parts.append("%s%s (Lv %d)" % [prefix, facility.name, facility.level])
-	parts.append("Cost: %d" % facility.cost)
-	parts.append("Resilience: %d" % facility.resilience)
-	if facility.description != "":
-		parts.append("")
-		parts.append(facility.description)
-	return "\n".join(parts)
+	var description := facility.description.strip_edges()
+	if description.is_empty():
+		return "No description available yet."
+	return description
 
 func _on_offer_toggled(pressed: bool, index: int) -> void:
 	if not pressed:

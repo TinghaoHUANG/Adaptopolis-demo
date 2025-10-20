@@ -43,7 +43,10 @@ const HIGHLIGHT_PANEL_NAME := "HighlightOverlay"
 
 const FACILITY_ICONS := {
 	"green_roof": preload("res://icons/facilities/greenroof_1.png"),
-	"rain_garden": preload("res://icons/facilities/raingarden_1.png")
+	"rain_garden": preload("res://icons/facilities/raingarden_1.png"),
+	"constructed_wetland": preload("res://icons/facilities/wetland_1.png"),
+	"pump_station": preload("res://icons/facilities/pump_1.png"),
+	"flood_wall": preload("res://icons/facilities/floodwall_1.png")
 }
 
 const RETENTION_POND_ICONS := {
@@ -248,9 +251,15 @@ func _get_facility_icon(facility: Facility, grid_position: Vector2i) -> Texture2
 		return null
 	match facility.id:
 		"green_roof":
-			return FACILITY_ICONS.get("green_roof")
+			return _get_single_icon(facility)
 		"rain_garden":
-			return FACILITY_ICONS.get("rain_garden")
+			return _get_single_icon(facility)
+		"constructed_wetland":
+			return _get_single_icon(facility)
+		"pump_station":
+			return _get_single_icon(facility)
+		"flood_wall":
+			return _get_single_icon(facility)
 		"retention_pond":
 			return _get_retention_pond_icon(facility, grid_position)
 		_:
@@ -273,10 +282,19 @@ func _get_retention_pond_icon(facility: Facility, grid_position: Vector2i) -> Te
 	return RETENTION_POND_ICONS.get(normalized, null)
 
 func _format_facility_label(facility: Facility) -> String:
+	if facility == null:
+		return ""
+	if FACILITY_ICONS.has(facility.id) or facility.id == "retention_pond":
+		return ""
 	var icon: String = "🌱" if facility.type == "green" else "🏗️"
 	if facility.id == "green_roof":
 		icon = "🏡"
 	return icon
+
+func _get_single_icon(facility: Facility) -> Texture2D:
+	if facility == null:
+		return null
+	return FACILITY_ICONS.get(facility.id, null)
 
 func _show_preview(origin: Vector2i) -> void:
 	clear_preview()

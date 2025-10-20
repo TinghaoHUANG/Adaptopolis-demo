@@ -42,17 +42,17 @@ func update_round(round_number: int) -> void:
 func update_health(health: int, max_health: int) -> void:
 	var label: Label = _get_label(health_label_path)
 	if label:
-		label.text = "%d / %d" % [health, max_health]
+		label.text = "❤️ %d / %d" % [health, max_health]
 
 func update_money(money_value) -> void:
 	var label: Label = _get_label(money_label_path)
 	if label:
-		label.text = "%s %s" % [tr("BUY_FACILITY"), _format_money(money_value)]
+		label.text = "🪙 Funds %s" % _format_money(money_value)
 
 func update_resilience(resilience: int) -> void:
 	var label: Label = _get_label(resilience_label_path)
 	if label:
-		label.text = "Resilience: %d" % resilience
+		label.text = "🛡️ Resilience %d" % resilience
 
 func show_rain_report(report: Dictionary) -> void:
 	var hud: Node = _get_node(hud_path)

@@ -111,11 +111,12 @@
 						  true
 					  ]
 				  ],
-		"special_rule":  "Next to water, cost 0.5 funds/round.",
+		"special_rule":  "Next to water or blue infrastructure, cost 0.5 funds/round.",
 		"unlock_round":  1,
 		"type_tags":  [
 						  "grey"
-					  ]
+					  ],
+		"description":  "Electric pumps move stormwater away from low points. Place next to water or blue infrastructure to activate drainage support."
 	},
 	{
 		"id":  "permeable_pavement",

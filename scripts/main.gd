@@ -26,6 +26,7 @@ extends Node
 @export var hud_container_path: NodePath
 @export var shop_panel_path: NodePath
 @export var restart_button_path: NodePath
+@export var exit_button_path: NodePath
 @export var victory_menu_path: NodePath
 @export var victory_label_path: NodePath
 @export var victory_restart_button_path: NodePath
@@ -67,6 +68,7 @@ var start_button: BaseButton = null
 var hud_container: Control = null
 var shop_panel: Control = null
 var restart_button: Button = null
+var exit_button: Button = null
 var victory_menu: Control = null
 var victory_label: Label = null
 var victory_restart_button: Button = null
@@ -142,6 +144,7 @@ func _ready() -> void:
 	hud_container = get_node_or_null(hud_container_path) as Control
 	shop_panel = get_node_or_null(shop_panel_path) as Control
 	restart_button = get_node_or_null(restart_button_path) as Button
+	exit_button = get_node_or_null(exit_button_path) as Button
 	victory_menu = get_node_or_null(victory_menu_path) as Control
 	victory_label = get_node_or_null(victory_label_path) as Label
 	victory_restart_button = get_node_or_null(victory_restart_button_path) as Button
@@ -705,6 +708,7 @@ func _bind_controls() -> void:
 
 	_connect_button(start_button, "_on_start_pressed")
 	_connect_button(restart_button, "_on_restart_pressed")
+	_connect_button(exit_button, "_on_exit_pressed")
 	_connect_button(victory_restart_button, "_on_restart_pressed")
 	_connect_button(victory_endless_button, "_on_victory_endless_pressed")
 
@@ -864,6 +868,9 @@ func _on_start_pressed() -> void:
 
 func _on_restart_pressed() -> void:
 	start_new_game()
+
+func _on_exit_pressed() -> void:
+	get_tree().quit()
 
 func _on_victory_endless_pressed() -> void:
 	endless_mode = true

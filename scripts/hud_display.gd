@@ -34,7 +34,7 @@ func _update_label() -> void:
 	if forecast_min > 0 or forecast_max > 0:
 		min_text = str(forecast_min)
 		max_text = str(forecast_max)
-	label.text = "Range: %s - %s" % [min_text, max_text]
+	label.text = "☔ Range: %s - %s" % [min_text, max_text]
 
 func _get_report_label() -> Label:
 	if rain_report_label_path.is_empty():

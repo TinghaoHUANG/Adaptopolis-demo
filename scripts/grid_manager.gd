@@ -168,7 +168,7 @@ func _validate_placement(facility: Facility, origin: Vector2i, allow_self_overla
 		if cell.occupied:
 			return {"allowed": false, "merge_target": null}
 		if facility.id == "pump_station":
-			if not _has_adjacent_water(target):
+			if not _has_adjacent_water_or_blue_infrastructure(target):
 				return {"allowed": false, "merge_target": null}
 	return {"allowed": true, "merge_target": merge_target}
 
@@ -252,12 +252,20 @@ func _clear_facility_cells(facility: Facility) -> void:
 		cell.occupied = cell.is_building or cell.is_water
 	facility_cells[facility].clear()
 
-func _has_adjacent_water(position: Vector2i) -> bool:
+func _has_adjacent_water_or_blue_infrastructure(position: Vector2i) -> bool:
 	var directions := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 	for dir in directions:
 		var neighbor := get_cell(position + dir)
-		if neighbor and neighbor.is_water:
+		if neighbor == null:
+			continue
+		if neighbor.is_water:
 			return true
+		var neighbor_facility: Facility = neighbor.facility_ref
+		if neighbor_facility:
+			var tags := neighbor_facility.get_type_tags()
+			for tag in tags:
+				if tag == "blue":
+					return true
 	return false
 
 func get_cell(position: Vector2i) -> GridCell:
