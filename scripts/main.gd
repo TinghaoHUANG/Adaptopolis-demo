@@ -110,6 +110,9 @@ var base_resolution: Vector2 = Vector2(
 	float(ProjectSettings.get_setting("display/window/size/viewport_width", 1920)),
 	float(ProjectSettings.get_setting("display/window/size/viewport_height", 1080))
 )
+const STATUS_COLOR_NORMAL := Color(1, 1, 1, 1)
+const STATUS_COLOR_WARNING := Color(1, 0.33, 0.33, 1)
+const STATUS_ICON_WARNING := "⚠️"
 const VICTORY_ROUND_TARGET := 20
 const FACILITY_INFO_HIDE_DELAY := 0.12
 const GARDEN_CITY_IDS := [
@@ -431,7 +434,7 @@ func _on_purchase_failed(reason: String) -> void:
 			message = "That placement is blocked. Try a different tile."
 		"Placement failed":
 			message = "Placement failed unexpectedly." 
-	_show_status(message)
+	_show_warning(message)
 
 func _on_shop_offer_selected(index: int) -> void:
 	if _is_dragging():
@@ -892,7 +895,7 @@ func _is_dragging() -> bool:
 	return dragged_facility != null
 
 func _rotation_hint() -> String:
-	return "Right-click to rotate clockwise (顺时针)."
+	return "Right-click to rotate."
 
 func _maybe_append_rotation_hint(message: String) -> String:
 	if not game_active:
@@ -1059,8 +1062,20 @@ func _shop_display_call(method: StringName, args: Array = []) -> void:
 func _show_status(message: String) -> void:
 	message = _maybe_append_rotation_hint(message)
 	if status_label:
-		status_label.text = message
+		_set_status_text(message, STATUS_COLOR_NORMAL)
 	print(message)
+
+func _show_warning(message: String) -> void:
+	var formatted := "%s %s" % [STATUS_ICON_WARNING, _maybe_append_rotation_hint(message)]
+	if status_label:
+		_set_status_text(formatted, STATUS_COLOR_WARNING)
+	print(formatted)
+
+func _set_status_text(text: String, color: Color) -> void:
+	if status_label == null:
+		return
+	status_label.text = text
+	status_label.add_theme_color_override("font_color", color)
 
 func _reset_cards() -> void:
 	acquired_cards.clear()

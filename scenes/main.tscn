@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bu4u6yl2516gu"]
+[gd_scene load_steps=15 format=3 uid="uid://bu4u6yl2516gu"]
 
 [ext_resource type="Script" uid="uid://bm2gb3olffh6w" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" uid="uid://b27vm1jwb1mby" path="res://scripts/ui_manager.gd" id="2"]
@@ -12,7 +12,6 @@
 [ext_resource type="Script" uid="uid://cn72gxq60j1ow" path="res://scripts/card_bar.gd" id="10"]
 [ext_resource type="Texture2D" uid="uid://bc4hhn5h58jhx" path="res://icons/background/cover_page.png" id="11"]
 [ext_resource type="Texture2D" uid="uid://cbdwi13odyils" path="res://icons/button/start_1.png" id="12"]
-[ext_resource type="Texture2D" uid="uid://dvttqbunav5m5" path="res://icons/button/nextround_1.png" id="13"]
 [ext_resource type="FontFile" path="res://fonts/details_font.tres" id="14"]
 
 [sub_resource type="StyleBoxFlat" id="StyleStartPanel"]
@@ -129,9 +128,9 @@ alignment = 1
 layout_mode = 3
 anchors_preset = 0
 offset_left = 24.0
-offset_top = 144.0
+offset_top = 289.0
 offset_right = 347.0
-offset_bottom = 324.0
+offset_bottom = 469.0
 script = ExtResource("3")
 rain_report_label_path = NodePath("RainPanel/RainReportLabel")
 
@@ -181,20 +180,17 @@ offset_right = -8.0
 offset_bottom = -8.0
 text = "☔ Range: ? - ?"
 
-[node name="NextRoundButton" type="TextureButton" parent="UI/HUD"]
+[node name="NextRoundButton" type="Button" parent="UI/HUD"]
 custom_minimum_size = Vector2(110, 35)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = -3.0
-offset_top = 163.0
-offset_right = 137.0
-offset_bottom = 273.0
+offset_left = -4.0
+offset_top = 198.0
+offset_right = -27.0
+offset_bottom = 234.0
 grow_horizontal = 2
-scale = Vector2(0.6, 0.6)
-focus_mode = 0
-texture_normal = ExtResource("13")
-stretch_mode = 3
+text = "Next Round"
 
 [node name="StatusLabel" type="Label" parent="UI/HUD"]
 layout_mode = 1

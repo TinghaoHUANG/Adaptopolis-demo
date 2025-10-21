@@ -41,12 +41,37 @@ const LEVEL_BORDER_WIDTH: int = 4
 const NO_HIGHLIGHT: Color = Color(0, 0, 0, 0)
 const HIGHLIGHT_PANEL_NAME := "HighlightOverlay"
 
-const FACILITY_ICONS := {
-	"green_roof": preload("res://icons/facilities/greenroof_1.png"),
-	"rain_garden": preload("res://icons/facilities/raingarden_1.png"),
-	"constructed_wetland": preload("res://icons/facilities/wetland_1.png"),
-	"pump_station": preload("res://icons/facilities/pump_1.png"),
-	"flood_wall": preload("res://icons/facilities/floodwall_1.png")
+const FACILITY_TEXTURE_SETS := {
+	"green_roof": [
+		preload("res://icons/facilities/greenroof_1.png")
+	],
+	"rain_garden": [
+		preload("res://icons/facilities/raingarden_1.png")
+	],
+	"constructed_wetland": [
+		preload("res://icons/facilities/wetland_1.png")
+	],
+	"pump_station": [
+		preload("res://icons/facilities/pump_1.png")
+	],
+	"flood_wall": [
+		preload("res://icons/facilities/floodwall_1.png")
+	],
+	"bio_swale": [
+		preload("res://icons/facilities/bioswale_1.png"),
+		preload("res://icons/facilities/bioswale_2.png"),
+		preload("res://icons/facilities/bioswale_3.png"),
+		preload("res://icons/facilities/bioswale_4.png")
+	],
+	"infiltration_trench": [
+		preload("res://icons/facilities/infiltrationtrench_1.png")
+	],
+	"permeable_pavement": [
+		preload("res://icons/facilities/permeablepavement_1.png")
+	],
+	"stormwater_tree": [
+		preload("res://icons/facilities/stormwatertree_1.png")
+	]
 }
 
 const RETENTION_POND_ICONS := {
@@ -251,15 +276,23 @@ func _get_facility_icon(facility: Facility, grid_position: Vector2i) -> Texture2
 		return null
 	match facility.id:
 		"green_roof":
-			return _get_single_icon(facility)
+			return _get_textured_icon(facility, grid_position)
 		"rain_garden":
-			return _get_single_icon(facility)
+			return _get_textured_icon(facility, grid_position)
 		"constructed_wetland":
-			return _get_single_icon(facility)
+			return _get_textured_icon(facility, grid_position)
 		"pump_station":
-			return _get_single_icon(facility)
+			return _get_textured_icon(facility, grid_position)
 		"flood_wall":
-			return _get_single_icon(facility)
+			return _get_textured_icon(facility, grid_position)
+		"bio_swale":
+			return _get_textured_icon(facility, grid_position)
+		"infiltration_trench":
+			return _get_textured_icon(facility, grid_position)
+		"permeable_pavement":
+			return _get_textured_icon(facility, grid_position)
+		"stormwater_tree":
+			return _get_textured_icon(facility, grid_position)
 		"retention_pond":
 			return _get_retention_pond_icon(facility, grid_position)
 		_:
@@ -284,17 +317,47 @@ func _get_retention_pond_icon(facility: Facility, grid_position: Vector2i) -> Te
 func _format_facility_label(facility: Facility) -> String:
 	if facility == null:
 		return ""
-	if FACILITY_ICONS.has(facility.id) or facility.id == "retention_pond":
+	if FACILITY_TEXTURE_SETS.has(facility.id) or facility.id == "retention_pond":
 		return ""
 	var icon: String = "🌱" if facility.type == "green" else "🏗️"
 	if facility.id == "green_roof":
 		icon = "🏡"
 	return icon
 
-func _get_single_icon(facility: Facility) -> Texture2D:
+func _get_textured_icon(facility: Facility, grid_position: Vector2i) -> Texture2D:
 	if facility == null:
 		return null
-	return FACILITY_ICONS.get(facility.id, null)
+	if not FACILITY_TEXTURE_SETS.has(facility.id):
+		return null
+	var textures: Array = FACILITY_TEXTURE_SETS[facility.id]
+	if textures.is_empty():
+		return null
+	if textures.size() == 1:
+		return textures[0]
+	var index := _get_facility_cell_index(facility, grid_position)
+	if index < 0:
+		return textures[0]
+	return textures[min(index, textures.size() - 1)]
+
+func _get_facility_cell_index(facility: Facility, grid_position: Vector2i) -> int:
+	if grid_manager == null:
+		return -1
+	var origin := grid_manager.get_facility_origin(facility)
+	var offset := grid_position - origin
+	var footprint: Array = facility.get_footprint()
+	if footprint.is_empty():
+		return -1
+	var sorted_offsets: Array = footprint.duplicate()
+	sorted_offsets.sort_custom(Callable(self, "_compare_offsets"))
+	for i in range(sorted_offsets.size()):
+		if sorted_offsets[i] == offset:
+			return i
+	return -1
+
+func _compare_offsets(a: Vector2i, b: Vector2i) -> bool:
+	if a.y == b.y:
+		return a.x < b.x
+	return a.y < b.y
 
 func _show_preview(origin: Vector2i) -> void:
 	clear_preview()

@@ -11,7 +11,7 @@
 						  true
 					  ]
 				  ],
-		"description":  "Absorbs stormwater and reduces runoff.",
+		"description":  "A facility reduces runoff and enhance exfiltration.",
 		"unlock_round":  1,
 		"type_tags":  [
 						  "green"
@@ -93,7 +93,7 @@
 						  false
 					  ]
 				  ],
-		"description":  "S-shaped wetland that filters stormwater and provides habitat.",
+		"description":  "Artificial wetland that filters stormwater and provides function on ecosystem.",
 		"unlock_round":  1,
 		"type_tags":  [
 						  "blue",
@@ -116,7 +116,7 @@
 		"type_tags":  [
 						  "grey"
 					  ],
-		"description":  "Electric pumps move stormwater away from low points. Place next to water or blue infrastructure to activate drainage support."
+		"description":  "Electric pumps rapidly redistribute water. Place next to water or blue infrastructure to activate drainage support."
 	},
 	{
 		"id":  "permeable_pavement",
@@ -196,62 +196,20 @@
 					  ]
 	},
 	{
-		"id":  "tree_trench",
-		"name":  "Tree Trench",
+		"id":  "stormwater_tree",
+		"name":  "Stormwater Tree",
 		"type":  "green",
 		"cost":  9,
 		"resilience":  4,
 		"shape":  [
 					  [
-						  false,
-						  true,
-						  false
-					  ],
-					  [
-						  true,
-						  true,
 						  true
-					  ],
-					  [
-						  false,
-						  false,
-						  false
 					  ]
 				  ],
-		"description":  "Street trees linked with subsurface trenches.",
+		"description":  "Compact street tree planter that captures stormwater on a single tile.",
 		"unlock_round":  6,
 		"type_tags":  [
 						  "green"
-					  ]
-	},
-	{
-		"id":  "detention_basin",
-		"name":  "Detention Basin",
-		"type":  "grey",
-		"cost":  13,
-		"resilience":  6,
-		"shape":  [
-					  [
-						  true,
-						  true,
-						  true
-					  ],
-					  [
-						  true,
-						  false,
-						  true
-					  ],
-					  [
-						  true,
-						  true,
-						  true
-					  ]
-				  ],
-		"description":  "Temporarily stores stormwater to flatten peaks.",
-		"special_rule":  "Hollow ring. Space-intensive but powerful.",
-		"unlock_round":  8,
-		"type_tags":  [
-						  "blue"
 					  ]
 	}
 ]
