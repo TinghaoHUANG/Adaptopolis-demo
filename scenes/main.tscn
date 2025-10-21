@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bu4u6yl2516gu"]
+[gd_scene load_steps=16 format=3 uid="uid://bu4u6yl2516gu"]
 
 [ext_resource type="Script" uid="uid://bm2gb3olffh6w" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" uid="uid://b27vm1jwb1mby" path="res://scripts/ui_manager.gd" id="2"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" uid="uid://cn72gxq60j1ow" path="res://scripts/card_bar.gd" id="10"]
 [ext_resource type="Texture2D" uid="uid://bc4hhn5h58jhx" path="res://icons/background/cover_page.png" id="11"]
 [ext_resource type="Texture2D" uid="uid://cbdwi13odyils" path="res://icons/button/start_1.png" id="12"]
+[ext_resource type="Script" uid="uid://d2kjaencbcyat" path="res://scripts/tutorial_overlay.gd" id="13"]
 [ext_resource type="FontFile" path="res://fonts/details_font.tres" id="14"]
 
 [sub_resource type="StyleBoxFlat" id="StyleStartPanel"]
@@ -52,6 +53,65 @@ card_info_title_path = NodePath("UI/CardInfo/Margin/VBox/Title")
 card_info_details_path = NodePath("UI/CardInfo/Margin/VBox/Details")
 
 [node name="UI" type="CanvasLayer" parent="."]
+
+[node name="TutorialOverlay" type="Control" parent="UI"]
+visible = false
+z_index = 500
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("13")
+
+[node name="DimTop" type="ColorRect" parent="UI/TutorialOverlay"]
+layout_mode = 0
+color = Color(0, 0, 0, 0.65)
+
+[node name="DimBottom" type="ColorRect" parent="UI/TutorialOverlay"]
+layout_mode = 0
+color = Color(0, 0, 0, 0.65)
+
+[node name="DimLeft" type="ColorRect" parent="UI/TutorialOverlay"]
+layout_mode = 0
+color = Color(0, 0, 0, 0.65)
+
+[node name="DimRight" type="ColorRect" parent="UI/TutorialOverlay"]
+layout_mode = 0
+color = Color(0, 0, 0, 0.65)
+
+[node name="Highlight" type="Panel" parent="UI/TutorialOverlay"]
+layout_mode = 0
+mouse_filter = 1
+
+[node name="MessagePanel" type="PanelContainer" parent="UI/TutorialOverlay"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 0
+size_flags_horizontal = 4
+mouse_filter = 1
+
+[node name="Margin" type="MarginContainer" parent="UI/TutorialOverlay/MessagePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="UI/TutorialOverlay/MessagePanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MessageLabel" type="Label" parent="UI/TutorialOverlay/MessagePanel/Margin/VBox"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Tutorial step"
+autowrap_mode = 2
+
+[node name="NextButton" type="Button" parent="UI/TutorialOverlay/MessagePanel/Margin/VBox"]
+layout_mode = 2
+text = "Next"
 
 [node name="CardInfo" type="PanelContainer" parent="UI"]
 visible = false
@@ -178,7 +238,7 @@ offset_left = 8.0
 offset_top = 32.0
 offset_right = -8.0
 offset_bottom = -8.0
-text = "☔ Range: ? - ?"
+text = "Range: ? - ?"
 
 [node name="NextRoundButton" type="Button" parent="UI/HUD"]
 custom_minimum_size = Vector2(110, 35)

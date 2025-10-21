@@ -105,6 +105,8 @@ var pending_hover_card: Dictionary = {}
 var pending_hover_card_source: Control = null
 var card_info_hovered: bool = false
 var card_info_target_control: Control = null
+var tutorial_overlay: TutorialOverlay = null
+var tutorial_shown: bool = false
 var ui_layer: CanvasLayer = null
 var base_resolution: Vector2 = Vector2(
 	float(ProjectSettings.get_setting("display/window/size/viewport_width", 1920)),
@@ -160,6 +162,11 @@ func _ready() -> void:
 	card_info_panel = get_node_or_null(card_info_panel_path) as PanelContainer
 	card_info_title = get_node_or_null(card_info_title_path) as Label
 	card_info_details = get_node_or_null(card_info_details_path) as RichTextLabel
+	tutorial_overlay = get_node_or_null("UI/TutorialOverlay") as TutorialOverlay
+	if tutorial_overlay:
+		tutorial_overlay.visible = false
+		if not tutorial_overlay.is_connected("tutorial_finished", Callable(self, "_on_tutorial_finished")):
+			tutorial_overlay.connect("tutorial_finished", Callable(self, "_on_tutorial_finished"))
 	if facility_info_panel:
 		facility_info_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 		facility_info_panel.connect("mouse_entered", Callable(self, "_on_facility_info_mouse_entered"))
@@ -290,6 +297,11 @@ func start_new_game() -> void:
 	_show_status("A new city rises. Rain forecast: %s. Select a facility to begin building." % _format_forecast_range(forecast_range))
 	_update_button_state()
 	_evaluate_card_unlocks()
+	if tutorial_overlay and not tutorial_shown:
+		var steps := _build_tutorial_steps()
+		if not steps.is_empty():
+			tutorial_shown = true
+			tutorial_overlay.call_deferred("start", steps)
 
 func simulate_round() -> Dictionary:
 	var report: Dictionary = rain_system.simulate_round(city_state)
@@ -1076,6 +1088,30 @@ func _set_status_text(text: String, color: Color) -> void:
 		return
 	status_label.text = text
 	status_label.add_theme_color_override("font_color", color)
+
+func _build_tutorial_steps() -> Array:
+	var steps: Array = []
+	_append_tutorial_step(steps, "UI/HUD/StatsContainer", "Keep an eye on rounds, health, funds, and resilience here.", 20.0)
+	_append_tutorial_step(steps, "UI/HUD/RainPanel", "Upcoming rainfall is shown here so you can prepare.", 18.0)
+	_append_tutorial_step(steps, "UI/ShopPanel", "Buy new facilities from the shop to expand your city.", 18.0)
+	_append_tutorial_step(steps, "UI/CardBar", "Unlocked cards and their bonuses appear here.", 18.0)
+	_append_tutorial_step(steps, "UI/GridDisplay", "Place facilities on the grid to build storm resilience.", 24.0)
+	_append_tutorial_step(steps, "UI/HUD/NextRoundButton", "Advance to the next round once you are ready.", 18.0)
+	return steps
+
+func _append_tutorial_step(steps: Array, path: String, message: String, padding: float = 16.0) -> void:
+	var node := get_node_or_null(path)
+	if node == null or not (node is Control):
+		return
+	steps.append({
+		"target": node,
+		"message": message,
+		"padding": padding
+	})
+
+func _on_tutorial_finished() -> void:
+	# Tutorial ended; ensure future games skip the guided overlay.
+	pass
 
 func _reset_cards() -> void:
 	acquired_cards.clear()
