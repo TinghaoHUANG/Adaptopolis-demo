@@ -131,17 +131,17 @@ func _update_dim_regions(highlight_rect: Rect2, screen_size: Vector2) -> void:
 func _position_message_panel(highlight_rect: Rect2, screen_size: Vector2) -> void:
 	message_panel.reset_size()
 	var preferred_size: Vector2 = message_panel.get_combined_minimum_size()
-	var position: Vector2 = highlight_rect.position + Vector2(highlight_rect.size.x + 24.0, 0.0)
-	if position.x + preferred_size.x > screen_size.x:
-		position.x = max(24.0, highlight_rect.position.x - preferred_size.x - 24.0)
-	position.x = clamp(position.x, 24.0, screen_size.x - preferred_size.x - 24.0)
+	var panel_position: Vector2 = highlight_rect.position + Vector2(highlight_rect.size.x + 24.0, 0.0)
+	if panel_position.x + preferred_size.x > screen_size.x:
+		panel_position.x = max(24.0, highlight_rect.position.x - preferred_size.x - 24.0)
+	panel_position.x = clamp(panel_position.x, 24.0, screen_size.x - preferred_size.x - 24.0)
 
-	if position.y + preferred_size.y > screen_size.y:
-		position.y = max(24.0, screen_size.y - preferred_size.y - 24.0)
+	if panel_position.y + preferred_size.y > screen_size.y:
+		panel_position.y = max(24.0, screen_size.y - preferred_size.y - 24.0)
 	else:
-		position.y = max(24.0, min(position.y, screen_size.y - preferred_size.y - 24.0))
+		panel_position.y = max(24.0, min(panel_position.y, screen_size.y - preferred_size.y - 24.0))
 
-	message_panel.position = position
+	message_panel.position = panel_position
 
 func _clamp_rect_to_screen(rect: Rect2, screen_size: Vector2) -> Rect2:
 	var clamped := rect

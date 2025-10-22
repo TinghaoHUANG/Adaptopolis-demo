@@ -12,7 +12,7 @@
 [ext_resource type="Script" uid="uid://cn72gxq60j1ow" path="res://scripts/card_bar.gd" id="10"]
 [ext_resource type="Texture2D" uid="uid://bc4hhn5h58jhx" path="res://icons/background/cover_page.png" id="11"]
 [ext_resource type="Texture2D" uid="uid://cbdwi13odyils" path="res://icons/button/start_1.png" id="12"]
-[ext_resource type="Script" uid="uid://d2kjaencbcyat" path="res://scripts/tutorial_overlay.gd" id="13"]
+[ext_resource type="Script" uid="uid://cy64fj8luxul3" path="res://scripts/tutorial_overlay.gd" id="13"]
 [ext_resource type="FontFile" path="res://fonts/details_font.tres" id="14"]
 
 [sub_resource type="StyleBoxFlat" id="StyleStartPanel"]
@@ -117,8 +117,9 @@ text = "Next"
 visible = false
 z_index = 200
 z_as_relative = false
-offset_right = 244.0
-offset_bottom = 185.0
+custom_minimum_size = Vector2(320, 260)
+offset_right = 320.0
+offset_bottom = 320.0
 
 [node name="Margin" type="MarginContainer" parent="UI/CardInfo"]
 layout_mode = 2
@@ -137,7 +138,7 @@ text = "Card"
 horizontal_alignment = 1
 
 [node name="Details" type="RichTextLabel" parent="UI/CardInfo/Margin/VBox"]
-custom_minimum_size = Vector2(220, 80)
+custom_minimum_size = Vector2(260, 180)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/line_separation = 2
@@ -321,6 +322,7 @@ grow_vertical = 2
 script = ExtResource("5")
 offers_container_path = NodePath("MarginContainer/VBox/OfferList")
 detail_label_path = NodePath("MarginContainer/VBox/DetailLabel")
+warning_label_path = NodePath("MarginContainer/VBox/WarningLabel")
 skip_button_path = NodePath("MarginContainer/VBox/Controls/SkipButton")
 refresh_button_path = NodePath("MarginContainer/VBox/Controls/RefreshButton")
 
@@ -343,10 +345,18 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="DetailLabel" type="Label" parent="UI/ShopPanel/MarginContainer/VBox"]
-custom_minimum_size = Vector2(0, 140)
+custom_minimum_size = Vector2(400, 140)
 layout_mode = 2
+size_flags_horizontal = 4
 size_flags_vertical = 3
 text = "Select a facility, then click the grid to place it."
+autowrap_mode = 2
+
+[node name="WarningLabel" type="Label" parent="UI/ShopPanel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(400, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 0.341176, 0.341176, 1)
 autowrap_mode = 2
 
 [node name="Controls" type="HBoxContainer" parent="UI/ShopPanel/MarginContainer/VBox"]

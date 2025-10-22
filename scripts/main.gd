@@ -289,6 +289,7 @@ func start_new_game() -> void:
 		hud_container.visible = true
 	if shop_display:
 		_shop_display_call("clear_selection")
+	_shop_display_call("clear_warning", [])
 	var offers: Array = _shop_refresh_offers()
 	_on_offers_changed(offers)
 	var forecast_range := _update_forecast()
@@ -419,6 +420,7 @@ func _on_facility_purchased(facility) -> void:
 		_grid_display_call("refresh_all")
 	if shop_display:
 		_shop_display_call("clear_selection")
+	_shop_display_call("clear_warning", [])
 	_show_status("Placed %s (Lv %d)." % [facility.name, facility.level])
 	_update_button_state()
 	_shop_refresh_offers()
@@ -447,6 +449,7 @@ func _on_purchase_failed(reason: String) -> void:
 		"Placement failed":
 			message = "Placement failed unexpectedly." 
 	_show_warning(message)
+	_shop_display_call("set_warning", [message])
 
 func _on_shop_offer_selected(index: int) -> void:
 	if _is_dragging():
@@ -457,6 +460,7 @@ func _on_shop_offer_selected(index: int) -> void:
 		_clear_selection_preview()
 		return
 	selected_offer_index = index
+	_shop_display_call("clear_warning", [])
 	if index < 0:
 		_clear_selection_preview()
 		_show_status("Select a facility to prepare for placement.")
@@ -479,6 +483,7 @@ func _on_shop_skip_selected(index: int) -> void:
 		_clear_selection_preview()
 		if shop_display:
 			_shop_display_call("clear_selection")
+		_shop_display_call("clear_warning", [])
 		_show_status("Skipped offer. Pick another facility when ready.")
 
 func _on_shop_refresh_requested() -> void:
@@ -490,6 +495,7 @@ func _on_shop_refresh_requested() -> void:
 	_clear_selection_preview()
 	if shop_display:
 		_shop_display_call("clear_selection")
+	_shop_display_call("clear_warning", [])
 	_show_status("Shop refreshed with new options.")
 
 func _cancel_hover_schedule() -> void:
@@ -540,7 +546,8 @@ func _on_grid_cell_clicked(position: Vector2i) -> void:
 			_clear_selection_preview()
 			if shop_display:
 				_shop_display_call("clear_selection")
-		return
+			_shop_display_call("clear_warning", [])
+			return
 	var existing := grid_manager.get_facility_at(position) if grid_manager else null
 	if existing:
 		_begin_facility_drag(existing)
@@ -825,6 +832,7 @@ func _show_start_menu() -> void:
 	_hide_card_info()
 	selected_offer_index = -1
 	_shop_display_call("clear_selection")
+	_shop_display_call("clear_warning", [])
 	_update_button_state()
 	_show_status("Welcome to Adaptopolis! Press Start to begin.")
 
@@ -871,6 +879,7 @@ func _handle_victory(_report: Dictionary) -> void:
 	_clear_selection_preview()
 	_hide_facility_info()
 	_shop_display_call("clear_selection")
+	_shop_display_call("clear_warning", [])
 	var completed_rounds: int = 0
 	if city_state:
 		completed_rounds = max(city_state.round_number - 1, 0)

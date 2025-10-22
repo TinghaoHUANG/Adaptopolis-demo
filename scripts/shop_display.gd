@@ -8,13 +8,13 @@
 class_name ShopDisplay
 extends PanelContainer
 
-
 signal offer_selected(index: int)
 signal skip_selected(index: int)
 signal refresh_requested()
 
 @export var offers_container_path: NodePath
 @export var detail_label_path: NodePath
+@export var warning_label_path: NodePath
 @export var skip_button_path: NodePath
 @export var refresh_button_path: NodePath
 
@@ -24,6 +24,7 @@ var button_group: ButtonGroup = ButtonGroup.new()
 var selected_index: int = -1
 var offers_container: VBoxContainer = null
 var detail_label: Label = null
+var warning_label: Label = null
 var skip_button: Button = null
 var refresh_button: Button = null
 
@@ -43,6 +44,7 @@ func _ready() -> void:
 	button_group.allow_unpress = true
 	offers_container = get_node_or_null(offers_container_path) as VBoxContainer
 	detail_label = get_node_or_null(detail_label_path) as Label
+	warning_label = get_node_or_null(warning_label_path) as Label
 	skip_button = get_node_or_null(skip_button_path) as Button
 	refresh_button = get_node_or_null(refresh_button_path) as Button
 	if skip_button:
@@ -54,6 +56,10 @@ func _ready() -> void:
 	if detail_label and DETAIL_FONT:
 		detail_label.add_theme_font_override("font", DETAIL_FONT)
 		detail_label.add_theme_font_size_override("font_size", DETAIL_FONT_SIZE)
+	if warning_label:
+		warning_label.visible = false
+		warning_label.text = ""
+		warning_label.add_theme_color_override("font_color", Color(1.0, 0.34, 0.34))
 	_update_status_hint()
 
 func set_offers(new_offers: Array) -> void:
@@ -66,17 +72,28 @@ func set_status(text: String) -> void:
 	if detail_label:
 		detail_label.text = text
 
+func set_warning(text: String) -> void:
+	if warning_label == null:
+		return
+	warning_label.text = text
+	warning_label.visible = not text.is_empty()
+
+func clear_warning() -> void:
+	set_warning("")
+
 func clear_selection() -> void:
 	selected_index = -1
 	for button in buttons:
 		button.button_pressed = false
 	_update_status_hint()
+	clear_warning()
 	if offers_container and offers.is_empty():
 		set_status("No offers available.")
 
 func _rebuild_offer_list() -> void:
 	if offers_container == null:
 		return
+	clear_warning()
 	for button in buttons:
 		button.queue_free()
 	buttons.clear()
@@ -187,6 +204,7 @@ func _on_offer_toggled(pressed: bool, index: int) -> void:
 			_update_status_hint()
 		return
 	selected_index = index
+	clear_warning()
 	emit_signal("offer_selected", index)
 	var facility: Facility = offers[index]
 	set_status(_build_detail_text(facility))
@@ -196,9 +214,11 @@ func _on_offer_toggled(pressed: bool, index: int) -> void:
 func _on_skip_pressed() -> void:
 	if selected_index < 0:
 		return
+	clear_warning()
 	emit_signal("skip_selected", selected_index)
 
 func _on_refresh_pressed() -> void:
+	clear_warning()
 	emit_signal("refresh_requested")
 
 func _update_status_hint() -> void:
