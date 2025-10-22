@@ -208,6 +208,7 @@ func _ready() -> void:
 		shop_display.connect("offer_selected", Callable(self, "_on_shop_offer_selected"))
 		shop_display.connect("skip_selected", Callable(self, "_on_shop_skip_selected"))
 		shop_display.connect("refresh_requested", Callable(self, "_on_shop_refresh_requested"))
+		_update_shop_funds()
 
 	if card_bar:
 		card_bar.connect("card_hovered", Callable(self, "_on_card_hovered"))
@@ -776,6 +777,7 @@ func _on_next_round_pressed() -> void:
 	_show_status(message)
 func _on_city_stats_changed() -> void:
 	_update_button_state()
+	_update_shop_funds()
 
 func _update_button_state() -> void:
 	if next_round_button == null:
@@ -795,6 +797,11 @@ func _format_forecast_range(forecast_range: Dictionary) -> String:
 	if min_value == 0 and max_value == 0:
 		return "?"
 	return "%d - %d" % [min_value, max_value]
+
+func _update_shop_funds() -> void:
+	if city_state == null or shop_display == null:
+		return
+	_shop_display_call("set_funds", [city_state.money])
 
 func _update_forecast() -> Dictionary:
 	if rain_system == null or city_state == null:

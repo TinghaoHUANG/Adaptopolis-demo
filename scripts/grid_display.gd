@@ -81,11 +81,14 @@ const RETENTION_POND_ICONS := {
 	Vector2i(1, 1): preload("res://icons/facilities/retentionpond_1_lowerright.png")
 }
 
+var flood_wall_vertical_texture: Texture2D = null
+
 func _ready() -> void:
 	columns = grid_columns
 	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_prepare_orientation_textures()
 	_rebuild_cells()
 	if not grid_manager_path.is_empty():
 		var node: GridManager = get_node_or_null(grid_manager_path) as GridManager
@@ -284,7 +287,7 @@ func _get_facility_icon(facility: Facility, grid_position: Vector2i) -> Texture2
 		"pump_station":
 			return _get_textured_icon(facility, grid_position)
 		"flood_wall":
-			return _get_textured_icon(facility, grid_position)
+			return _get_flood_wall_icon(facility)
 		"bio_swale":
 			return _get_textured_icon(facility, grid_position)
 		"infiltration_trench":
@@ -353,6 +356,54 @@ func _get_facility_cell_index(facility: Facility, grid_position: Vector2i) -> in
 		if sorted_offsets[i] == offset:
 			return i
 	return -1
+
+func _get_flood_wall_icon(facility: Facility) -> Texture2D:
+	if facility == null:
+		return null
+	_prepare_orientation_textures()
+	if not FACILITY_TEXTURE_SETS.has("flood_wall"):
+		return null
+	var textures: Array = FACILITY_TEXTURE_SETS["flood_wall"]
+	if textures.is_empty():
+		return null
+	var base_texture: Texture2D = textures[0]
+	var footprint := facility.get_footprint()
+	if footprint.is_empty():
+		return base_texture
+	var min_x := footprint[0].x
+	var max_x := footprint[0].x
+	var min_y := footprint[0].y
+	var max_y := footprint[0].y
+	for offset in footprint:
+		min_x = min(min_x, offset.x)
+		max_x = max(max_x, offset.x)
+		min_y = min(min_y, offset.y)
+		max_y = max(max_y, offset.y)
+	var width := (max_x - min_x) + 1
+	var height := (max_y - min_y) + 1
+	if height > width and flood_wall_vertical_texture:
+		return flood_wall_vertical_texture
+	return base_texture
+
+func _prepare_orientation_textures() -> void:
+	if flood_wall_vertical_texture != null:
+		return
+	if not FACILITY_TEXTURE_SETS.has("flood_wall"):
+		return
+	var textures: Array = FACILITY_TEXTURE_SETS["flood_wall"]
+	if textures.is_empty():
+		return
+	var base_texture: Texture2D = textures[0]
+	if base_texture == null:
+		return
+	var source_image: Image = base_texture.get_image()
+	if source_image == null:
+		return
+	var rotated_image := source_image.duplicate()
+	rotated_image.rotate_90(true)
+	flood_wall_vertical_texture = ImageTexture.create_from_image(rotated_image)
+	if flood_wall_vertical_texture:
+		flood_wall_vertical_texture.resource_name = "FloodWallVertical"
 
 func _compare_offsets(a: Vector2i, b: Vector2i) -> bool:
 	if a.y == b.y:

@@ -12,6 +12,7 @@ signal offer_selected(index: int)
 signal skip_selected(index: int)
 signal refresh_requested()
 
+@export var title_label_path: NodePath
 @export var offers_container_path: NodePath
 @export var detail_label_path: NodePath
 @export var warning_label_path: NodePath
@@ -23,6 +24,7 @@ var buttons: Array[Button] = []
 var button_group: ButtonGroup = ButtonGroup.new()
 var selected_index: int = -1
 var offers_container: VBoxContainer = null
+var title_label: Label = null
 var detail_label: Label = null
 var warning_label: Label = null
 var skip_button: Button = null
@@ -40,9 +42,14 @@ const OFFER_STATS_FONT_SIZE: int = 16
 const DETAIL_FONT: FontFile = preload("res://fonts/details_font_desc.tres")
 const DETAIL_FONT_SIZE: int = 28
 const SHAPE_PREVIEW_CLASS := preload("res://scripts/shop_shape_preview.gd")
+const FUNDS_LABEL_TEXT: String = "🪙 Funds"
+
+var _base_title_text: String = ""
+var _current_funds_value: Variant = null
 
 func _ready() -> void:
 	button_group.allow_unpress = true
+	title_label = get_node_or_null(title_label_path) as Label
 	offers_container = get_node_or_null(offers_container_path) as VBoxContainer
 	detail_label = get_node_or_null(detail_label_path) as Label
 	warning_label = get_node_or_null(warning_label_path) as Label
@@ -61,6 +68,9 @@ func _ready() -> void:
 		warning_label.visible = false
 		warning_label.text = ""
 		warning_label.add_theme_color_override("font_color", Color(1.0, 0.34, 0.34))
+	if title_label:
+		_base_title_text = title_label.text
+		_refresh_title()
 	_update_status_hint()
 
 func set_offers(new_offers: Array) -> void:
@@ -81,6 +91,10 @@ func set_warning(text: String) -> void:
 
 func clear_warning() -> void:
 	set_warning("")
+
+func set_funds(value) -> void:
+	_current_funds_value = value
+	_refresh_title()
 
 func clear_selection() -> void:
 	selected_index = -1
@@ -211,6 +225,17 @@ func _get_level_highlight(level: int) -> Color:
 		return LEVEL2_HIGHLIGHT
 	return LEVEL3_HIGHLIGHT
 
+func _refresh_title() -> void:
+	if title_label == null:
+		return
+	if _base_title_text.is_empty():
+		_base_title_text = title_label.text if not title_label.text.is_empty() else "🛒 Shop"
+	if _current_funds_value == null:
+		title_label.text = _base_title_text
+		return
+	var formatted := _format_money(_current_funds_value)
+	title_label.text = "%s    %s %s" % [_base_title_text, FUNDS_LABEL_TEXT, formatted]
+
 func _format_offer_title(facility: Facility) -> String:
 	var dots := facility.get_type_dots()
 	var prefix := "%s " % dots if not dots.is_empty() else ""
@@ -224,6 +249,13 @@ func _build_detail_text(facility: Facility) -> String:
 	if description.is_empty():
 		return "No description available yet."
 	return description
+
+func _format_money(value) -> String:
+	var numeric := float(value)
+	var rounded: float = round(numeric * 100.0) / 100.0
+	if is_equal_approx(rounded, round(rounded)):
+		return str(int(round(rounded)))
+	return "%0.1f" % rounded
 
 func _on_offer_toggled(pressed: bool, index: int) -> void:
 	if not pressed:
