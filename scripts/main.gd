@@ -25,6 +25,7 @@ extends Node
 @export var start_button_path: NodePath
 @export var hud_container_path: NodePath
 @export var shop_panel_path: NodePath
+@export var developer_toggle_path: NodePath
 @export var restart_button_path: NodePath
 @export var exit_button_path: NodePath
 @export var victory_menu_path: NodePath
@@ -67,6 +68,7 @@ var start_menu: Control = null
 var start_button: BaseButton = null
 var hud_container: Control = null
 var shop_panel: Control = null
+var developer_toggle: CheckButton = null
 var restart_button: Button = null
 var exit_button: Button = null
 var victory_menu: Control = null
@@ -88,6 +90,7 @@ var facility_info_hide_timer: Timer = null
 var game_active: bool = false
 var endless_mode: bool = false
 var round_animation_active: bool = false
+var developer_mode_enabled: bool = false
 var card_bar: CardBar = null
 var acquired_cards: Array[Dictionary] = []
 var acquired_card_lookup: Dictionary = {}
@@ -112,6 +115,7 @@ var base_resolution: Vector2 = Vector2(
 	float(ProjectSettings.get_setting("display/window/size/viewport_width", 1920)),
 	float(ProjectSettings.get_setting("display/window/size/viewport_height", 1080))
 )
+var round_refresh_count: int = 0
 const STATUS_COLOR_NORMAL := Color(1, 1, 1, 1)
 const STATUS_COLOR_WARNING := Color(1, 0.33, 0.33, 1)
 const STATUS_ICON_WARNING := "⚠️"
@@ -162,6 +166,14 @@ func _ready() -> void:
 	card_info_panel = get_node_or_null(card_info_panel_path) as PanelContainer
 	card_info_title = get_node_or_null(card_info_title_path) as Label
 	card_info_details = get_node_or_null(card_info_details_path) as RichTextLabel
+	developer_toggle = get_node_or_null(developer_toggle_path) as CheckButton
+	developer_mode_enabled = city_state != null and city_state.is_developer_mode()
+	if developer_toggle:
+		developer_toggle.focus_mode = Control.FOCUS_NONE
+		developer_toggle.button_pressed = developer_mode_enabled
+		if not developer_toggle.is_connected("toggled", Callable(self, "_on_developer_toggle_toggled")):
+			developer_toggle.connect("toggled", Callable(self, "_on_developer_toggle_toggled"))
+	_apply_developer_mode(developer_mode_enabled, false)
 	tutorial_overlay = get_node_or_null("UI/TutorialOverlay") as TutorialOverlay
 	if tutorial_overlay:
 		tutorial_overlay.visible = false
@@ -277,6 +289,7 @@ func start_new_game() -> void:
 	_hide_start_menu()
 	_hide_victory_menu()
 	city_state.reset()
+	_reset_round_refresh_counter()
 	grid_manager.clear()
 	if round_summary_animator:
 		round_summary_animator.reset()
@@ -322,6 +335,7 @@ func simulate_round() -> Dictionary:
 	if card_effects.has("damage_after"):
 		report["damage"] = card_effects["damage_after"]
 	city_state.advance_round()
+	_reset_round_refresh_counter()
 	return report
 
 func _prepare_facility_for_purchase(facility: Facility) -> Dictionary:
@@ -491,13 +505,32 @@ func _on_shop_refresh_requested() -> void:
 	if _is_dragging():
 		_show_status("Finish relocating the current facility before refreshing the shop.")
 		return
+	var cost := _calculate_refresh_cost()
+	if cost > 0:
+		if city_state == null or not city_state.can_afford(cost):
+			var warning := "Need %d funds to refresh the shop." % cost
+			_show_status(warning)
+			if shop_display:
+				_shop_display_call("set_warning", [warning])
+			return
+		if not city_state.spend_money(cost):
+			var error_message := "Could not process refresh payment."
+			_show_status(error_message)
+			if shop_display:
+				_shop_display_call("set_warning", [error_message])
+			return
 	_shop_refresh_offers()
+	round_refresh_count += 1
 	selected_offer_index = -1
 	_clear_selection_preview()
 	if shop_display:
 		_shop_display_call("clear_selection")
 	_shop_display_call("clear_warning", [])
-	_show_status("Shop refreshed with new options.")
+	_update_refresh_display()
+	if cost > 0:
+		_show_status("Shop refreshed with new options. Spent %d funds." % cost)
+	else:
+		_show_status("Shop refreshed with new options. First refresh is free.")
 
 func _cancel_hover_schedule() -> void:
 	if hover_info_timer:
@@ -802,6 +835,43 @@ func _update_shop_funds() -> void:
 	if city_state == null or shop_display == null:
 		return
 	_shop_display_call("set_funds", [city_state.money])
+	_update_refresh_display()
+
+func _update_refresh_display() -> void:
+	if shop_display == null:
+		return
+	_shop_display_call("set_refresh_cost", [_calculate_refresh_cost()])
+
+func _on_developer_toggle_toggled(pressed: bool) -> void:
+	_apply_developer_mode(pressed)
+
+func _apply_developer_mode(enabled: bool, show_message: bool = true) -> void:
+	if developer_mode_enabled == enabled and (city_state == null or city_state.is_developer_mode() == enabled):
+		return
+	developer_mode_enabled = enabled
+	if city_state:
+		city_state.set_developer_mode(enabled)
+	if show_message:
+		if enabled:
+			_show_status("Developer mode enabled: unlimited funds.")
+		else:
+			_show_status("Developer mode disabled.")
+	_update_shop_funds()
+
+func _calculate_refresh_cost() -> int:
+	var base_cost: int = _calculate_refresh_base_cost()
+	return base_cost * round_refresh_count
+
+func _calculate_refresh_base_cost() -> int:
+	if city_state == null:
+		return 2
+	var round_number: int = max(city_state.round_number, 1)
+	var tier: int = int((round_number - 1) / 5)
+	return 2 + tier * 1
+
+func _reset_round_refresh_counter() -> void:
+	round_refresh_count = 0
+	_update_refresh_display()
 
 func _update_forecast() -> Dictionary:
 	if rain_system == null or city_state == null:

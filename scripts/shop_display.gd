@@ -43,9 +43,11 @@ const DETAIL_FONT: FontFile = preload("res://fonts/details_font_desc.tres")
 const DETAIL_FONT_SIZE: int = 28
 const SHAPE_PREVIEW_CLASS := preload("res://scripts/shop_shape_preview.gd")
 const FUNDS_LABEL_TEXT: String = "🪙 Funds"
+const REFRESH_FREE_TEXT := "Free"
 
 var _base_title_text: String = ""
 var _current_funds_value: Variant = null
+var _current_refresh_cost: int = 0
 
 func _ready() -> void:
 	button_group.allow_unpress = true
@@ -59,8 +61,8 @@ func _ready() -> void:
 		skip_button.text = tr("SKIP_TURN")
 		skip_button.connect("pressed", Callable(self, "_on_skip_pressed"))
 	if refresh_button:
-		refresh_button.text = "Refresh"
 		refresh_button.connect("pressed", Callable(self, "_on_refresh_pressed"))
+		_update_refresh_button_label()
 	if detail_label and DETAIL_FONT:
 		detail_label.add_theme_font_override("font", DETAIL_FONT)
 		detail_label.add_theme_font_size_override("font_size", DETAIL_FONT_SIZE)
@@ -95,6 +97,10 @@ func clear_warning() -> void:
 func set_funds(value) -> void:
 	_current_funds_value = value
 	_refresh_title()
+
+func set_refresh_cost(cost: int) -> void:
+	_current_refresh_cost = max(0, cost)
+	_update_refresh_button_label()
 
 func clear_selection() -> void:
 	selected_index = -1
@@ -235,6 +241,15 @@ func _refresh_title() -> void:
 		return
 	var formatted := _format_money(_current_funds_value)
 	title_label.text = "%s    %s %s" % [_base_title_text, FUNDS_LABEL_TEXT, formatted]
+
+func _update_refresh_button_label() -> void:
+	if refresh_button == null:
+		return
+	var base_label := "Refresh"
+	if _current_refresh_cost <= 0:
+		refresh_button.text = "%s (%s)" % [base_label, tr(REFRESH_FREE_TEXT)]
+	else:
+		refresh_button.text = "%s (-%d)" % [base_label, _current_refresh_cost]
 
 func _format_offer_title(facility: Facility) -> String:
 	var dots := facility.get_type_dots()

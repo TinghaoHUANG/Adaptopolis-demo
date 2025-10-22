@@ -31,7 +31,8 @@ func _on_stats_changed() -> void:
 	var stats: Dictionary = city_state.get_snapshot()
 	update_round(stats["round"])
 	update_health(stats["health"], city_state.max_health)
-	update_money(stats["money"])
+	var developer_mode_active := bool(stats.get("developer_mode", false))
+	update_money(stats["money"], developer_mode_active)
 	update_resilience(city_state.get_total_resilience())
 
 func update_round(round_number: int) -> void:
@@ -44,10 +45,13 @@ func update_health(health: int, max_health: int) -> void:
 	if label:
 		label.text = "❤️ %d / %d" % [health, max_health]
 
-func update_money(money_value) -> void:
+func update_money(money_value, developer_mode_active: bool = false) -> void:
 	var label: Label = _get_label(money_label_path)
 	if label:
-		label.text = "🪙 Funds %s" % _format_money(money_value)
+		if developer_mode_active:
+			label.text = "🪙 Funds ∞"
+		else:
+			label.text = "🪙 Funds %s" % _format_money(money_value)
 
 func update_resilience(resilience: int) -> void:
 	var label: Label = _get_label(resilience_label_path)

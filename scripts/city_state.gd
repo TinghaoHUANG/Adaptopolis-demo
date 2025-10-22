@@ -23,6 +23,9 @@ var money: float = starting_money
 var round_number: int = 1
 var last_damage: int = 0
 var facilities: Array[Facility] = []
+var developer_mode: bool = false
+
+const DEVELOPER_FUNDS_AMOUNT := 999999.0
 
 func reset() -> void:
 	health = max_health
@@ -30,6 +33,8 @@ func reset() -> void:
 	round_number = 1
 	last_damage = 0
 	facilities.clear()
+	if developer_mode:
+		_apply_developer_funds()
 	emit_signal("stats_changed")
 
 func register_facility(facility: Facility) -> void:
@@ -60,14 +65,23 @@ func add_income() -> int:
 	var income: int = base_income
 	if last_damage == 0:
 		income = base_income + perfect_round_bonus
-	money = _snap_money(money + income)
+	if developer_mode:
+		_apply_developer_funds()
+	else:
+		money = _snap_money(money + income)
 	emit_signal("stats_changed")
 	return income
 
 func can_afford(cost) -> bool:
+	if developer_mode:
+		return true
 	return cost <= money
 
 func spend_money(cost) -> bool:
+	if developer_mode:
+		_apply_developer_funds()
+		emit_signal("stats_changed")
+		return true
 	if cost > money:
 		return false
 	money = _snap_money(money - cost)
@@ -77,7 +91,10 @@ func spend_money(cost) -> bool:
 func add_money(amount) -> void:
 	if amount <= 0:
 		return
-	money = _snap_money(money + amount)
+	if developer_mode:
+		_apply_developer_funds()
+	else:
+		money = _snap_money(money + amount)
 	emit_signal("stats_changed")
 
 func advance_round() -> void:
@@ -93,8 +110,25 @@ func get_snapshot() -> Dictionary:
 		"health": health,
 		"money": money,
 		"round": round_number,
-		"last_damage": last_damage
+		"last_damage": last_damage,
+		"developer_mode": developer_mode
 	}
 
 func _snap_money(value: float) -> float:
 	return round(value * 100.0) / 100.0
+
+func set_developer_mode(enabled: bool) -> void:
+	if developer_mode == enabled:
+		return
+	developer_mode = enabled
+	if developer_mode:
+		_apply_developer_funds()
+	else:
+		money = _snap_money(money)
+	emit_signal("stats_changed")
+
+func is_developer_mode() -> bool:
+	return developer_mode
+
+func _apply_developer_funds() -> void:
+	money = max(money, DEVELOPER_FUNDS_AMOUNT)

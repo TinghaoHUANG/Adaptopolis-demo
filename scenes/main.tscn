@@ -37,6 +37,7 @@ start_menu_path = NodePath("UI/StartMenu")
 start_button_path = NodePath("UI/StartMenu/Menu/VBox/StartButtonPanel/StartButton")
 hud_container_path = NodePath("UI/HUD")
 shop_panel_path = NodePath("UI/ShopPanel")
+developer_toggle_path = NodePath("UI/DeveloperToggle")
 restart_button_path = NodePath("UI/HUD/RestartButton")
 exit_button_path = NodePath("UI/HUD/ExitButton")
 victory_menu_path = NodePath("UI/VictoryMenu")
@@ -545,6 +546,19 @@ text = "Restart"
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Continue Endless"
+
+[node name="DeveloperToggle" type="CheckButton" parent="UI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -60.0
+offset_right = -20.0
+offset_bottom = -20.0
+focus_mode = 0
+text = "Developer Mode"
 
 [node name="UIManager" type="Node" parent="UI"]
 script = ExtResource("2")
