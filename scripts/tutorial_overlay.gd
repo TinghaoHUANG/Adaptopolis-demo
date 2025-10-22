@@ -12,6 +12,7 @@ var highlight: Panel
 var message_panel: PanelContainer
 var message_label: Label
 var next_button: Button
+var skip_button: Button
 
 var _steps: Array[Dictionary] = []
 var _current_step: int = -1
@@ -28,9 +29,13 @@ func _ready() -> void:
 	message_panel = $MessagePanel
 	message_label = $MessagePanel/Margin/VBox/MessageLabel
 	next_button = $MessagePanel/Margin/VBox/NextButton
+	skip_button = $MessagePanel/Margin/VBox/SkipButton
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	next_button.connect("pressed", Callable(self, "_on_next_pressed"))
+	if skip_button:
+		skip_button.text = tr("Skip Tutorial")
+		skip_button.connect("pressed", Callable(self, "_on_skip_pressed"))
 	_setup_highlight_style()
 	var root_window: Window = get_tree().root
 	if root_window and not root_window.is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
@@ -53,6 +58,9 @@ func start(steps: Array) -> void:
 	visible = true
 	move_to_front()
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	if skip_button:
+		skip_button.visible = true
+		skip_button.disabled = false
 	emit_signal("tutorial_started")
 	_advance()
 
@@ -79,6 +87,8 @@ func _finish() -> void:
 	_active = false
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if skip_button:
+		skip_button.visible = false
 	_current_target = null
 	_steps.clear()
 	emit_signal("tutorial_finished")
@@ -87,6 +97,11 @@ func _on_next_pressed() -> void:
 	if not _active:
 		return
 	_advance()
+
+func _on_skip_pressed() -> void:
+	if not _active:
+		return
+	_finish()
 
 func _on_viewport_size_changed() -> void:
 	call_deferred("_update_layout_for_current_step")
