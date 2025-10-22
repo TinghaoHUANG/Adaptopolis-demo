@@ -39,6 +39,7 @@ const OFFER_STATS_FONT: FontFile = preload("res://fonts/pixel_font.tres")
 const OFFER_STATS_FONT_SIZE: int = 16
 const DETAIL_FONT: FontFile = preload("res://fonts/details_font_desc.tres")
 const DETAIL_FONT_SIZE: int = 28
+const SHAPE_PREVIEW_CLASS := preload("res://scripts/shop_shape_preview.gd")
 
 func _ready() -> void:
 	button_group.allow_unpress = true
@@ -111,14 +112,22 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	button.flat = false
 	button.custom_minimum_size = Vector2(0, 110)
 	button.text = ""
-	var content := VBoxContainer.new()
+	var content := HBoxContainer.new()
 	content.name = "Summary"
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.alignment = BoxContainer.ALIGNMENT_BEGIN
-	content.add_theme_constant_override("separation", 8)
+	content.add_theme_constant_override("separation", 12)
 	button.add_child(content)
+
+	var text_column := VBoxContainer.new()
+	text_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	text_column.alignment = BoxContainer.ALIGNMENT_BEGIN
+	text_column.add_theme_constant_override("separation", 6)
+	content.add_child(text_column)
 
 	var title_label := Label.new()
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -128,17 +137,37 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	if OFFER_TITLE_FONT:
 		title_label.add_theme_font_override("font", OFFER_TITLE_FONT)
 		title_label.add_theme_font_size_override("font_size", OFFER_TITLE_FONT_SIZE)
-	content.add_child(title_label)
+	text_column.add_child(title_label)
+
+	var stats_row := HBoxContainer.new()
+	stats_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stats_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stats_row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	stats_row.add_theme_constant_override("separation", 8)
+	text_column.add_child(stats_row)
 
 	var stats_label := Label.new()
 	stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	stats_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stats_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	stats_label.text = _format_offer_stats(facility)
 	if OFFER_STATS_FONT:
 		stats_label.add_theme_font_override("font", OFFER_STATS_FONT)
 		stats_label.add_theme_font_size_override("font_size", OFFER_STATS_FONT_SIZE)
-	content.add_child(stats_label)
+	stats_row.add_child(stats_label)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	spacer.custom_minimum_size = Vector2(28, 0)
+	stats_row.add_child(spacer)
+
+	var preview := SHAPE_PREVIEW_CLASS.new()
+	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	preview.set_facility(facility)
+	stats_row.add_child(preview)
+
 	_apply_offer_style(button, facility)
 	button.connect("toggled", Callable(self, "_on_offer_toggled").bind(index))
 	return button
