@@ -866,8 +866,8 @@ func _calculate_refresh_base_cost() -> int:
 	if city_state == null:
 		return 2
 	var round_number: int = max(city_state.round_number, 1)
-	var tier: int = int((round_number - 1) / 5)
-	return 2 + tier * 1
+	var tier: int = int((round_number - 1) / 5.0)
+	return 2 + tier * 2
 
 func _reset_round_refresh_counter() -> void:
 	round_refresh_count = 0
@@ -1213,11 +1213,19 @@ func _refresh_card_bar() -> void:
 	if card_bar == null:
 		return
 	var display_cards: Array = []
-	for card_info in acquired_cards:
+	for card_id in card_order:
+		var definition: Dictionary = card_definitions.get(card_id, {})
+		if definition.is_empty():
+			continue
+		var card_info := _create_card_info(definition)
+		var effect_summary := String(definition.get("effect_summary", ""))
 		var entry := {
-			"id": card_info.get("id", ""),
-			"name": card_info.get("name", "Card"),
-			"description": card_info.get("description", "")
+			"id": card_info.get("id", card_id),
+			"name": card_info.get("name", card_id),
+			"description": card_info.get("description", ""),
+			"effect_summary": effect_summary,
+			"effect_icons": _build_card_effect_icons(effect_summary),
+			"active": _has_card(card_id)
 		}
 		display_cards.append(entry)
 	card_bar.show_cards(display_cards)
@@ -1416,6 +1424,153 @@ func _create_card_info(definition: Dictionary) -> Dictionary:
 		"description": description.strip_edges(),
 		"_meta": {}
 	}
+
+func _build_card_effect_icons(effect_summary: String) -> String:
+	var text := effect_summary.strip_edges()
+	if text.is_empty():
+		return ""
+	var lower := text.to_lower()
+	var icons: Array[String] = []
+
+	var funds_amount := _extract_effect_amount(text, lower, "fund")
+	if lower.find("fund") != -1 or lower.find("income") != -1:
+		var funds := _normalize_effect_amount(funds_amount, lower, "fund", "+")
+		icons.append("🪙%s" % funds if not funds.is_empty() else "🪙")
+
+	var damage_amount := _extract_effect_amount(text, lower, "damage")
+	if lower.find("damage") != -1:
+		var badge := "💥"
+		if lower.find("half") != -1 or lower.find("halved") != -1:
+			icons.append("%s/2" % badge)
+		else:
+			var damage := _normalize_effect_amount(damage_amount, lower, "damage", "-")
+			icons.append("%s%s" % [badge, damage if not damage.is_empty() else "-"])
+
+	var health_amount := _extract_effect_amount(text, lower, "health")
+	if lower.find("health") != -1 or lower.find("restore") != -1:
+		var health := _normalize_effect_amount(health_amount, lower, "health", "+")
+		icons.append("❤️%s" % health if not health.is_empty() else "❤️")
+
+	var cost_amount := _extract_effect_amount(text, lower, "cost")
+	if lower.find("cost") != -1 or lower.find("build") != -1:
+		var cost := _normalize_effect_amount(cost_amount, lower, "cost", "-")
+		icons.append("💲%s" % cost if not cost.is_empty() else "💲")
+
+	if icons.is_empty():
+		return ""
+	return "  ".join(icons)
+
+func _normalize_effect_amount(amount: String, lower_text: String, keyword: String, default_sign: String) -> String:
+	var trimmed: String = amount.strip_edges()
+	if not trimmed.is_empty():
+		if trimmed.begins_with("+") or trimmed.begins_with("-"):
+			return trimmed
+
+	var context: String = _capture_keyword_context(lower_text, keyword)
+	var negative_markers: Array[String] = [
+		"reduce", "reduced", "reduces", "decrease", "decreases", "decreased",
+		"less", "prevent", "lower", "halved", "halve"
+	]
+	var positive_markers: Array[String] = ["increase", "increases", "increased", "more", "extra", "additional", "gain", "gains"]
+
+	if keyword == "fund":
+		if trimmed.is_empty():
+			return default_sign
+		if _context_contains(context, negative_markers):
+			return "-" + trimmed
+		if _context_contains(context, positive_markers):
+			return "+" + trimmed
+		return default_sign + trimmed
+
+	if keyword == "damage":
+		if trimmed.is_empty():
+			return default_sign
+		if _context_contains(context, negative_markers):
+			return "-" + trimmed
+		if _context_contains(context, positive_markers):
+			return "+" + trimmed
+		return default_sign + trimmed
+
+	if keyword == "health":
+		if trimmed.is_empty():
+			return default_sign
+		if _context_contains(context, negative_markers):
+			return "-" + trimmed
+		if _context_contains(context, positive_markers):
+			return "+" + trimmed
+		return default_sign + trimmed
+
+	if keyword == "cost":
+		if trimmed.is_empty():
+			return default_sign
+		if _context_contains(context, positive_markers):
+			return "+" + trimmed
+		if _context_contains(context, negative_markers):
+			return "-" + trimmed
+		return default_sign + trimmed
+
+	return trimmed
+
+func _capture_keyword_context(lower_text: String, keyword: String, radius: int = 32) -> String:
+	var idx := lower_text.find(keyword)
+	if idx == -1:
+		return lower_text
+	var start: int = max(idx - radius, 0)
+	var end: int = min(idx + keyword.length() + radius, lower_text.length())
+	return lower_text.substr(start, end - start)
+
+func _context_contains(context: String, markers: Array[String]) -> bool:
+	for marker in markers:
+		if context.find(marker) != -1:
+			return true
+	return false
+
+func _extract_effect_amount(original: String, lower: String, keyword: String) -> String:
+	var index := lower.find(keyword)
+	if index == -1:
+		return ""
+	var amount: String = ""
+
+	# Look forward from the keyword for a signed number.
+	var forward_index := index + keyword.length()
+	var length := original.length()
+	var i := forward_index
+	while i < length:
+		var ch := original[i]
+		if ch == " " or ch == "\t" or ch == ":":
+			if amount.is_empty():
+				i += 1
+				continue
+			break
+		if (ch >= "0" and ch <= "9") or ch == "+" or ch == "-":
+			amount += ch
+		elif amount.is_empty():
+			i += 1
+			continue
+		else:
+			break
+		i += 1
+
+	if not amount.is_empty():
+		return amount.strip_edges()
+
+	# Fallback: scan backwards for a number that precedes the keyword.
+	i = index - 1
+	while i >= 0:
+		var ch := original[i]
+		if ch == " " or ch == "\t" or ch == "\n":
+			if amount.is_empty():
+				i -= 1
+				continue
+			break
+		if (ch >= "0" and ch <= "9") or ch == "+" or ch == "-":
+			amount = ch + amount
+		elif amount.is_empty():
+			break
+		else:
+			break
+		i -= 1
+	return amount.strip_edges()
 
 func _apply_card_on_unlock(card_id: String, card_info: Dictionary) -> void:
 	var metadata_variant: Variant = card_info.get("_meta", {})

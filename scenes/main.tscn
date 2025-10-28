@@ -155,10 +155,10 @@ scroll_active = false
 [node name="CardBar" type="PanelContainer" parent="UI"]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 300.0
-offset_top = 8.0
-offset_right = -337.0
-offset_bottom = 128.0
+offset_left = 336.0
+offset_top = 11.0
+offset_right = -17.0
+offset_bottom = 215.0
 grow_horizontal = 2
 script = ExtResource("10")
 cards_container_path = NodePath("Margin/VBox/CardsContainer")
@@ -173,17 +173,15 @@ theme_override_constants/margin_bottom = 8
 
 [node name="VBox" type="VBoxContainer" parent="UI/CardBar/Margin"]
 layout_mode = 2
-alignment = 1
 
 [node name="Title" type="Label" parent="UI/CardBar/Margin/VBox"]
 layout_mode = 2
 text = "Card Bar"
-horizontal_alignment = 1
 
 [node name="EmptyLabel" type="Label" parent="UI/CardBar/Margin/VBox"]
+visible = false
 layout_mode = 2
 text = "No cards unlocked."
-horizontal_alignment = 1
 
 [node name="CardsContainer" type="HBoxContainer" parent="UI/CardBar/Margin/VBox"]
 layout_mode = 2
@@ -194,9 +192,9 @@ alignment = 1
 layout_mode = 3
 anchors_preset = 0
 offset_left = 24.0
-offset_top = 289.0
+offset_top = 376.0
 offset_right = 347.0
-offset_bottom = 469.0
+offset_bottom = 556.0
 script = ExtResource("3")
 rain_report_label_path = NodePath("RainPanel/RainReportLabel")
 
@@ -301,9 +299,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -486.0
-offset_top = -384.0
+offset_top = -297.0
 offset_right = 282.0
-offset_bottom = 384.0
+offset_bottom = 471.0
 grow_horizontal = 2
 grow_vertical = 2
 columns = 6
@@ -319,9 +317,9 @@ anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
 offset_left = -498.0
-offset_top = -194.0
+offset_top = -107.0
 offset_right = -24.0
-offset_bottom = 347.0
+offset_bottom = 434.0
 grow_horizontal = 0
 grow_vertical = 2
 script = ExtResource("5")
@@ -381,9 +379,9 @@ text = "Refresh"
 
 [node name="FacilityInfo" type="PanelContainer" parent="UI"]
 offset_left = 340.0
-offset_top = 140.0
+offset_top = 227.0
 offset_right = 600.0
-offset_bottom = 420.0
+offset_bottom = 507.0
 
 [node name="Margin" type="MarginContainer" parent="UI/FacilityInfo"]
 layout_mode = 2
@@ -553,10 +551,12 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -180.0
-offset_top = -60.0
-offset_right = -20.0
-offset_bottom = -20.0
+offset_left = -333.0
+offset_top = -55.0
+offset_right = -33.0
+offset_bottom = -15.0
+grow_horizontal = 0
+grow_vertical = 0
 focus_mode = 0
 text = "Developer Mode"
 

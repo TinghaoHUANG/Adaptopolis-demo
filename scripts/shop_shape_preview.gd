@@ -69,10 +69,10 @@ func _draw() -> void:
 	draw_rect(background_rect, BORDER_COLOR, false, 1.0)
 	for cell in _footprint:
 		var local := cell - _bounds_origin
-		var position := origin + Vector2(
+		var cell_position := origin + Vector2(
 			float(local.x) * (CELL_SIZE.x + CELL_GAP),
 			float(local.y) * (CELL_SIZE.y + CELL_GAP)
 		)
-		var rect := Rect2(position, CELL_SIZE)
+		var rect := Rect2(cell_position, CELL_SIZE)
 		draw_rect(rect, FILLED_COLOR, true)
 		draw_rect(rect, BORDER_COLOR, false, 1.0)

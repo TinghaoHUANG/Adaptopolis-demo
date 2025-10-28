@@ -149,15 +149,15 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	text_column.add_theme_constant_override("separation", 6)
 	content.add_child(text_column)
 
-	var title_label := Label.new()
-	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.text = _format_offer_title(facility)
+	var name_label := Label.new()
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.text = _format_offer_title(facility)
 	if OFFER_TITLE_FONT:
-		title_label.add_theme_font_override("font", OFFER_TITLE_FONT)
-		title_label.add_theme_font_size_override("font_size", OFFER_TITLE_FONT_SIZE)
-	text_column.add_child(title_label)
+		name_label.add_theme_font_override("font", OFFER_TITLE_FONT)
+		name_label.add_theme_font_size_override("font_size", OFFER_TITLE_FONT_SIZE)
+	text_column.add_child(name_label)
 
 	var stats_row := HBoxContainer.new()
 	stats_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
