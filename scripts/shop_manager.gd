@@ -18,6 +18,7 @@ signal facility_purchased(facility: Facility)
 var library: FacilityLibrary = null
 var city_state: CityState = null
 var current_offers: Array[Facility] = []
+var locked_slots: Array[bool] = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -30,21 +31,43 @@ func set_city_state(value: CityState) -> void:
 	city_state = value
 
 func refresh_offers() -> Array[Facility]:
+	var previous_offers := current_offers.duplicate()
+	var previous_locks := locked_slots.duplicate()
 	current_offers.clear()
+	locked_slots.clear()
 	if library == null:
 		push_warning("ShopManager requires a FacilityLibrary")
 		return current_offers
 	var round_number := city_state.round_number if city_state else 1
 	for i: int in range(offer_size):
-		var level := _determine_offer_level(round_number)
-		var facility: Facility = library.get_random_facility(round_number, rng, level)
-		if facility:
+		var reuse_locked: bool = i < previous_offers.size() and i < previous_locks.size() and previous_locks[i]
+		var facility: Facility = null
+		if reuse_locked:
+			facility = previous_offers[i]
+		if facility == null:
+			var level := _determine_offer_level(round_number)
+			facility = library.get_random_facility(round_number, rng, level)
+		if facility != null:
 			current_offers.append(facility)
+			locked_slots.append(reuse_locked)
 	emit_signal("offers_changed", current_offers.duplicate())
 	return current_offers
 
 func get_offers() -> Array[Facility]:
 	return current_offers.duplicate()
+
+func get_locked_slots() -> Array[bool]:
+	return locked_slots.duplicate()
+
+func set_offer_locked(index: int, locked: bool) -> void:
+	if index < 0 or index >= current_offers.size():
+		return
+	if index >= locked_slots.size():
+		var previous_size := locked_slots.size()
+		locked_slots.resize(current_offers.size())
+		for i in range(previous_size, locked_slots.size()):
+			locked_slots[i] = false
+	locked_slots[index] = locked
 
 func purchase_offer(index: int, grid_manager: GridManager, origin: Vector2i, template_override: Facility = null) -> bool:
 	if index < 0 or index >= current_offers.size():
@@ -73,6 +96,8 @@ func purchase_offer(index: int, grid_manager: GridManager, origin: Vector2i, tem
 		emit_signal("purchase_failed", "Placement failed")
 		return false
 	current_offers.remove_at(index)
+	if index < locked_slots.size():
+		locked_slots.remove_at(index)
 	emit_signal("offers_changed", current_offers.duplicate())
 	emit_signal("facility_purchased", facility)
 	return true
@@ -81,6 +106,8 @@ func skip_offer(index: int) -> bool:
 	if index < 0 or index >= current_offers.size():
 		return false
 	current_offers.remove_at(index)
+	if index < locked_slots.size():
+		locked_slots.remove_at(index)
 	emit_signal("offers_changed", current_offers.duplicate())
 	return true
 

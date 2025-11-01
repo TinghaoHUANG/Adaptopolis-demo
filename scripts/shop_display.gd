@@ -11,6 +11,7 @@ extends PanelContainer
 signal offer_selected(index: int)
 signal skip_selected(index: int)
 signal refresh_requested()
+signal offer_lock_toggled(index: int, locked: bool)
 
 @export var title_label_path: NodePath
 @export var offers_container_path: NodePath
@@ -20,7 +21,9 @@ signal refresh_requested()
 @export var refresh_button_path: NodePath
 
 var offers: Array = []
+var offer_locks: Array[bool] = []
 var buttons: Array[Button] = []
+var lock_buttons: Array[Button] = []
 var button_group: ButtonGroup = ButtonGroup.new()
 var selected_index: int = -1
 var offers_container: VBoxContainer = null
@@ -75,8 +78,14 @@ func _ready() -> void:
 		_refresh_title()
 	_update_status_hint()
 
-func set_offers(new_offers: Array) -> void:
+func set_offers(new_offers: Array, locked_states: Array = []) -> void:
 	offers = new_offers.duplicate()
+	offer_locks.clear()
+	for i in range(offers.size()):
+		var locked := false
+		if i < locked_states.size():
+			locked = bool(locked_states[i])
+		offer_locks.append(locked)
 	selected_index = -1
 	_rebuild_offer_list()
 	_update_status_hint()
@@ -118,11 +127,16 @@ func _rebuild_offer_list() -> void:
 	for button in buttons:
 		button.queue_free()
 	buttons.clear()
+	for button in lock_buttons:
+		if is_instance_valid(button):
+			button.queue_free()
+	lock_buttons.clear()
 	for index in range(offers.size()):
 		var facility: Facility = offers[index]
 		var button := _create_offer_button(index, facility)
 		offers_container.add_child(button)
 		buttons.append(button)
+	_sync_lock_buttons()
 
 func _create_offer_button(index: int, facility: Facility) -> Button:
 	var button := Button.new()
@@ -130,7 +144,8 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	button.button_group = button_group
 	button.focus_mode = Control.FOCUS_NONE
 	button.flat = false
-	button.custom_minimum_size = Vector2(0, 110)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.custom_minimum_size = Vector2(440, 110)
 	button.text = ""
 	var content := HBoxContainer.new()
 	content.name = "Summary"
@@ -165,7 +180,16 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	stats_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	stats_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	stats_row.add_theme_constant_override("separation", 8)
+	stats_row.custom_minimum_size = Vector2(button.custom_minimum_size.x + 40, 0)
 	text_column.add_child(stats_row)
+
+	var stats_group := HBoxContainer.new()
+	stats_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stats_group.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stats_group.alignment = BoxContainer.ALIGNMENT_BEGIN
+	stats_group.add_theme_constant_override("separation", 12)
+	stats_row.add_child(stats_group)
 
 	var stats_label := Label.new()
 	stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -175,18 +199,30 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	if OFFER_STATS_FONT:
 		stats_label.add_theme_font_override("font", OFFER_STATS_FONT)
 		stats_label.add_theme_font_size_override("font_size", OFFER_STATS_FONT_SIZE)
-	stats_row.add_child(stats_label)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	spacer.custom_minimum_size = Vector2(28, 0)
-	stats_row.add_child(spacer)
+	stats_group.add_child(stats_label)
 
 	var preview := SHAPE_PREVIEW_CLASS.new()
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	preview.set_facility(facility)
-	stats_row.add_child(preview)
+	stats_group.add_child(preview)
+	var lock_spacer := Control.new()
+	lock_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lock_spacer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stats_row.add_child(lock_spacer)
+
+	var lock_button := Button.new()
+	lock_button.toggle_mode = true
+	lock_button.focus_mode = Control.FOCUS_NONE
+	lock_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	lock_button.text = "🔓"
+	lock_button.tooltip_text = "Lock this offer to keep it on refresh."
+	lock_button.custom_minimum_size = Vector2(32, 32)
+	lock_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	lock_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	lock_button.connect("toggled", Callable(self, "_on_lock_toggled").bind(index))
+	stats_row.add_child(lock_button)
+	lock_buttons.append(lock_button)
 
 	_apply_offer_style(button, facility)
 	button.connect("toggled", Callable(self, "_on_offer_toggled").bind(index))
@@ -307,3 +343,32 @@ func _update_status_hint() -> void:
 		set_status(_build_detail_text(facility))
 	else:
 		set_status("Select a facility, then click the grid to place it.")
+
+func _on_lock_toggled(pressed: bool, index: int) -> void:
+	if index < 0 or index >= offers.size():
+		return
+	if index >= offer_locks.size():
+		var previous_size := offer_locks.size()
+		offer_locks.resize(offers.size())
+		for i in range(previous_size, offer_locks.size()):
+			offer_locks[i] = false
+	offer_locks[index] = pressed
+	_update_lock_button_visual(index)
+	emit_signal("offer_lock_toggled", index, pressed)
+
+func _update_lock_button_visual(index: int) -> void:
+	if index < 0 or index >= lock_buttons.size():
+		return
+	var button := lock_buttons[index]
+	if not is_instance_valid(button):
+		return
+	var locked := index < offer_locks.size() and offer_locks[index]
+	button.set_block_signals(true)
+	button.button_pressed = locked
+	button.text = "🔒" if locked else "🔓"
+	button.tooltip_text = "Unlock this offer to refresh it." if locked else "Lock this offer to keep it on refresh."
+	button.set_block_signals(false)
+
+func _sync_lock_buttons() -> void:
+	for i in range(lock_buttons.size()):
+		_update_lock_button_visual(i)

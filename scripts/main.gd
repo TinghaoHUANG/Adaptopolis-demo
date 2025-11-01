@@ -220,6 +220,7 @@ func _ready() -> void:
 		shop_display.connect("offer_selected", Callable(self, "_on_shop_offer_selected"))
 		shop_display.connect("skip_selected", Callable(self, "_on_shop_skip_selected"))
 		shop_display.connect("refresh_requested", Callable(self, "_on_shop_refresh_requested"))
+		shop_display.connect("offer_lock_toggled", Callable(self, "_on_shop_offer_lock_toggled"))
 		_update_shop_funds()
 
 	if card_bar:
@@ -441,8 +442,9 @@ func _on_facility_purchased(facility) -> void:
 	_shop_refresh_offers()
 
 func _on_offers_changed(offers: Array) -> void:
+	var lock_states: Array = _shop_get_locked_slots()
 	if shop_display:
-		_shop_display_call("set_offers", [offers])
+		_shop_display_call("set_offers", [offers, lock_states])
 	if selected_offer_index >= 0 and offers.size() > selected_offer_index:
 		_set_selected_preview_from_offer(offers[selected_offer_index])
 	else:
@@ -531,6 +533,15 @@ func _on_shop_refresh_requested() -> void:
 		_show_status("Shop refreshed with new options. Spent %d funds." % cost)
 	else:
 		_show_status("Shop refreshed with new options. First refresh is free.")
+
+func _on_shop_offer_lock_toggled(index: int, locked: bool) -> void:
+	_shop_set_offer_locked(index, locked)
+	var offers := _shop_get_offers()
+	if index < 0 or index >= offers.size():
+		return
+	var facility: Facility = offers[index]
+	var state_text := "Locked" if locked else "Unlocked"
+	_show_status("%s %s (Lv %d) for the next refresh." % [state_text, facility.name, facility.level])
 
 func _cancel_hover_schedule() -> void:
 	if hover_info_timer:
@@ -1139,6 +1150,12 @@ func _shop_get_offers() -> Array:
 		return result if typeof(result) == TYPE_ARRAY else []
 	return []
 
+func _shop_get_locked_slots() -> Array:
+	if shop_manager and shop_manager.has_method("get_locked_slots"):
+		var result = shop_manager.call("get_locked_slots")
+		return result if typeof(result) == TYPE_ARRAY else []
+	return []
+
 func _shop_skip_offer(index: int) -> bool:
 	if shop_manager and shop_manager.has_method("skip_offer"):
 		return bool(shop_manager.call("skip_offer", index))
@@ -1148,6 +1165,10 @@ func _shop_purchase_offer(index: int, manager: Node, origin: Vector2i, template:
 	if shop_manager and shop_manager.has_method("purchase_offer"):
 		return bool(shop_manager.call("purchase_offer", index, manager, origin, template))
 	return false
+
+func _shop_set_offer_locked(index: int, locked: bool) -> void:
+	if shop_manager and shop_manager.has_method("set_offer_locked"):
+		shop_manager.call("set_offer_locked", index, locked)
 
 func _grid_display_call(method: StringName, args: Array = []) -> void:
 	if grid_display and grid_display.has_method(method):

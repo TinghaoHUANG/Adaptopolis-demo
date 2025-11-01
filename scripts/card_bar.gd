@@ -152,12 +152,12 @@ func _create_art_style(is_active: bool) -> StyleBoxFlat:
 	return style
 
 func _wrap_card_name(raw_name: String) -> String:
-	var name := raw_name.strip_edges()
-	if name.is_empty():
-		return name
-	var words := name.split(" ", false)
+	var trimmed_name := raw_name.strip_edges()
+	if trimmed_name.is_empty():
+		return trimmed_name
+	var words := trimmed_name.split(" ", false)
 	if words.size() <= 1:
-		return name
+		return trimmed_name
 	return _join_with_newlines(words)
 
 func _build_card_tooltip(card_name: String, effect_summary: String, description: String) -> String:
