@@ -290,6 +290,8 @@ func start_new_game() -> void:
 	_hide_start_menu()
 	_hide_victory_menu()
 	city_state.reset()
+	if shop_manager:
+		shop_manager.reset_locked_slots()
 	_reset_round_refresh_counter()
 	grid_manager.clear()
 	if round_summary_animator:
@@ -321,20 +323,31 @@ func start_new_game() -> void:
 
 func simulate_round() -> Dictionary:
 	var report: Dictionary = rain_system.simulate_round(city_state)
-	ui_manager.show_rain_report(report)
 	var card_effects := _apply_card_post_rain(report)
+	var damage_after := int(card_effects.get("damage_after", report.get("damage", 0)))
+	report["damage"] = damage_after
+	ui_manager.show_rain_report(report)
+	# Apply damage once, after card effects.
+	city_state.apply_damage(damage_after)
+	# Income depends on last_damage; call after apply_damage.
 	var income := city_state.add_income()
 	report["income"] = income
+	# Bonus income from cards.
 	var bonus_income := int(card_effects.get("income_bonus", 0))
 	if bonus_income > 0:
 		city_state.add_money(bonus_income)
 	report["card_bonus"] = bonus_income
-	if card_effects.has("health_restored") and card_effects["health_restored"] > 0:
-		report["card_health_restore"] = card_effects["health_restored"]
+	# Optional healing: only on zero-damage rounds to prevent net-heal when damaged.
+	var heal_potential := int(card_effects.get("health_restore", 0))
+	if damage_after == 0 and heal_potential > 0:
+		var before_health := city_state.health
+		city_state.health = min(city_state.max_health, city_state.health + heal_potential)
+		var healed := city_state.health - before_health
+		if healed > 0:
+			report["card_health_restore"] = healed
+			city_state.emit_signal("stats_changed")
 	if card_effects.has("damage_delta"):
 		report["card_damage_delta"] = card_effects["damage_delta"]
-	if card_effects.has("damage_after"):
-		report["damage"] = card_effects["damage_after"]
 	city_state.advance_round()
 	_reset_round_refresh_counter()
 	return report
@@ -818,6 +831,8 @@ func _on_next_round_pressed() -> void:
 	var health_gain := int(report.get("card_health_restore", 0))
 	if health_gain > 0:
 		message += " Cards restored ❤️%d." % health_gain
+	_refresh_shop_for_new_round()
+	message += " Shop refreshed for the next round."
 	_show_status(message)
 func _on_city_stats_changed() -> void:
 	_update_button_state()
@@ -1137,6 +1152,16 @@ func _cancel_dragged_facility(restore: bool = true, message: String = "") -> voi
 	if not message.is_empty():
 		_show_status(message)
 	_update_button_state()
+
+
+func _refresh_shop_for_new_round() -> void:
+	selected_offer_index = -1
+	_shop_refresh_offers()
+	_clear_selection_preview()
+	if shop_display:
+		_shop_display_call("clear_selection")
+	_shop_display_call("clear_warning", [])
+	_update_refresh_display()
 
 func _shop_refresh_offers() -> Array:
 	if shop_manager and shop_manager.has_method("refresh_offers"):
@@ -1886,7 +1911,6 @@ func _apply_card_post_rain(report: Dictionary) -> Dictionary:
 	var damage_penalty := 0
 	var income_bonus := 0
 	var health_restore := 0
-	var stats_changed := false
 	if pending_damage_reduction_once > 0:
 		damage_reduction += pending_damage_reduction_once
 		pending_damage_reduction_once = 0
@@ -1921,39 +1945,14 @@ func _apply_card_post_rain(report: Dictionary) -> Dictionary:
 				damage_reduction += 3
 			_:
 				pass
-	var damage_after := damage_before
+	# Compute final damage: apply flat adjustments first, then multiplier.
+	var damage_after: int = max(damage_before - damage_reduction + damage_penalty, 0)
 	damage_after = int(round(float(damage_after) * damage_multiplier))
-	if damage_after < 0:
-		damage_after = 0
-	damage_after = max(damage_after - damage_reduction, 0)
-	damage_after = max(damage_after + damage_penalty, 0)
-	var damage_delta := damage_before - damage_after
-	if damage_delta != 0:
-		if damage_delta > 0:
-			var heal := damage_delta
-			var previous_health := city_state.health
-			city_state.health = min(city_state.max_health, city_state.health + heal)
-			if city_state.health != previous_health:
-				stats_changed = true
-		else:
-			var extra := -damage_delta
-			var prev_health := city_state.health
-			city_state.health = max(0, city_state.health - extra)
-			if city_state.health != prev_health:
-				stats_changed = true
-	var actual_health_restore := 0
-	if health_restore > 0:
-		var before_health := city_state.health
-		city_state.health = min(city_state.max_health, city_state.health + health_restore)
-		actual_health_restore = city_state.health - before_health
-		if actual_health_restore > 0:
-			stats_changed = true
-	city_state.last_damage = damage_after
-	if stats_changed:
-		city_state.emit_signal("stats_changed")
+	damage_after = max(damage_after, 0)
+	var damage_delta: int = damage_before - damage_after
 	return {
 		"income_bonus": income_bonus,
-		"health_restored": actual_health_restore,
+		"health_restore": health_restore,
 		"damage_delta": damage_delta,
 		"damage_after": damage_after
 	}

@@ -41,7 +41,6 @@ func simulate_round(city: CityState) -> Dictionary:
 	var result := _apply_facility_effects(city)
 	var total_resilience: int = int(result.get("resilience", city.get_total_resilience()))
 	var damage: int = max(intensity - total_resilience, 0)
-	city.apply_damage(damage)
 	return {
 		"intensity": intensity,
 		"resilience": total_resilience,

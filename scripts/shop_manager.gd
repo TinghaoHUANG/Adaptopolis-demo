@@ -59,6 +59,9 @@ func get_offers() -> Array[Facility]:
 func get_locked_slots() -> Array[bool]:
 	return locked_slots.duplicate()
 
+func reset_locked_slots() -> void:
+	locked_slots.clear()
+
 func set_offer_locked(index: int, locked: bool) -> void:
 	if index < 0 or index >= current_offers.size():
 		return
