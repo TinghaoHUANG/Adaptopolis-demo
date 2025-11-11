@@ -20,6 +20,8 @@ const TYPE_SYMBOLS := {
 	"blue": "💧",
 	"grey": "⬛"
 }
+const FAILURE_CURVE_LINEAR := "linear"
+const FAILURE_CURVE_EXP := "exp"
 
 @export var id: String = ""
 @export var name: String = ""
@@ -31,12 +33,26 @@ const TYPE_SYMBOLS := {
 @export var description: String = ""
 @export var special_rule: String = ""
 @export var unlock_round: int = 1
+@export var faction: String = ""
+@export var capex: float = 0.0
+@export var opex_per_year: float = 0.0
+@export var lifetime_years: int = 0
+@export var maint_required: float = 0.0
+@export var maint_fulfilled: float = 0.0
+@export var failure_curve: Dictionary = {}
+@export var co_benefits: Dictionary = {}
+@export var land_use: float = 0.0
+@export var build_time_weeks: int = 0
+@export var synergy: Dictionary = {}
+@export var drought_effect: Dictionary = {}
 
 var base_cost: int = 0
 var base_resilience: int = 0
 var type_tags: Array[String] = []
+var maintenance_debt: float = 0.0
+var maintenance_multiplier: float = 1.0
 
-func clone() -> Facility:
+func clone(include_runtime_state: bool = false) -> Facility:
 	var copy: Facility = Facility.new()
 	copy.id = id
 	copy.name = name
@@ -48,9 +64,26 @@ func clone() -> Facility:
 	copy.description = description
 	copy.special_rule = special_rule
 	copy.unlock_round = unlock_round
+	copy.faction = faction
+	copy.capex = capex
+	copy.opex_per_year = opex_per_year
+	copy.lifetime_years = lifetime_years
+	copy.maint_required = maint_required
+	copy.maint_fulfilled = maint_fulfilled
+	copy.failure_curve = failure_curve.duplicate(true)
+	copy.co_benefits = co_benefits.duplicate(true)
+	copy.land_use = land_use
+	copy.build_time_weeks = build_time_weeks
+	copy.synergy = synergy.duplicate(true)
+	copy.drought_effect = drought_effect.duplicate(true)
 	copy.base_cost = base_cost
 	copy.base_resilience = base_resilience
 	copy.type_tags = type_tags.duplicate()
+	if include_runtime_state:
+		copy.maintenance_debt = maintenance_debt
+		copy.maintenance_multiplier = maintenance_multiplier
+	else:
+		copy.reset_runtime_state()
 	return copy
 
 static func from_dict(data: Dictionary) -> Facility:
@@ -65,6 +98,18 @@ static func from_dict(data: Dictionary) -> Facility:
 	facility.description = data.get("description", "")
 	facility.special_rule = data.get("special_rule", "")
 	facility.unlock_round = data.get("unlock_round", 1)
+	facility.faction = data.get("faction", facility.type)
+	facility.capex = float(data.get("capex", facility.cost))
+	facility.opex_per_year = float(data.get("opex_per_year", 0.0))
+	facility.lifetime_years = int(data.get("lifetime_years", 0))
+	facility.maint_required = max(float(data.get("maint_required", 0.0)), 0.0)
+	facility.maint_fulfilled = max(float(data.get("maint_fulfilled", 0.0)), 0.0)
+	facility.failure_curve = facility._sanitize_failure_curve(data.get("failure_curve", {}))
+	facility.co_benefits = facility._sanitize_co_benefits(data.get("co_benefits", {}))
+	facility.land_use = float(data.get("land_use", 0.0))
+	facility.build_time_weeks = int(data.get("build_time_weeks", 0))
+	facility.synergy = facility._sanitize_dictionary(data.get("synergy", {}))
+	facility.drought_effect = facility._sanitize_drought_effect(data.get("drought_effect", {}))
 	facility.base_cost = facility.cost
 	facility.base_resilience = facility.resilience
 	var tags = data.get("type_tags", [])
@@ -79,6 +124,7 @@ static func from_dict(data: Dictionary) -> Facility:
 		else:
 			collected = [facility.type]
 	facility.type_tags = collected
+	facility.reset_runtime_state()
 	return facility
 
 func to_dict() -> Dictionary:
@@ -93,7 +139,19 @@ func to_dict() -> Dictionary:
 		"description": description,
 		"special_rule": special_rule,
 		"unlock_round": unlock_round,
-		"type_tags": type_tags.duplicate()
+		"type_tags": type_tags.duplicate(),
+		"faction": faction,
+		"capex": capex,
+		"opex_per_year": opex_per_year,
+		"lifetime_years": lifetime_years,
+		"maint_required": maint_required,
+		"maint_fulfilled": maint_fulfilled,
+		"failure_curve": failure_curve.duplicate(true),
+		"co_benefits": co_benefits.duplicate(true),
+		"land_use": land_use,
+		"build_time_weeks": build_time_weeks,
+		"synergy": synergy.duplicate(true),
+		"drought_effect": drought_effect.duplicate(true)
 	}
 
 func get_type_tags() -> Array[String]:
@@ -185,3 +243,103 @@ func _clone_shape(source: Array) -> Array:
 	for row in source:
 		result.append(row.duplicate())
 	return result
+
+func reset_runtime_state() -> void:
+	maint_fulfilled = 0.0
+	maintenance_debt = 0.0
+	maintenance_multiplier = 1.0
+
+func resolve_maintenance_payment(paid_amount: float) -> void:
+	paid_amount = max(paid_amount, 0.0)
+	maint_fulfilled = paid_amount
+	maintenance_debt = max(0.0, maint_required - paid_amount)
+	maintenance_multiplier = _evaluate_failure_curve()
+
+func get_maintenance_multiplier() -> float:
+	return maintenance_multiplier
+
+func get_effective_resilience() -> int:
+	var adjusted := float(resilience) * maintenance_multiplier
+	return int(max(round(adjusted), 0))
+
+func get_runtime_snapshot() -> Dictionary:
+	return {
+		"maint_fulfilled": maint_fulfilled,
+		"maintenance_debt": maintenance_debt,
+		"maintenance_multiplier": maintenance_multiplier
+	}
+
+func apply_runtime_snapshot(snapshot_variant) -> void:
+	if typeof(snapshot_variant) != TYPE_DICTIONARY:
+		reset_runtime_state()
+		return
+	var snapshot: Dictionary = snapshot_variant
+	maint_fulfilled = max(float(snapshot.get("maint_fulfilled", 0.0)), 0.0)
+	maintenance_debt = max(float(snapshot.get("maintenance_debt", 0.0)), 0.0)
+	maintenance_multiplier = clamp(float(snapshot.get("maintenance_multiplier", 1.0)), 0.0, 1.0)
+
+func get_drought_multipliers(drought_active: bool, has_reuse_support: bool) -> Dictionary:
+	if not drought_active:
+		return {"efficacy": 1.0, "heat": 1.0, "ecology": 1.0}
+	var requires_reuse: bool = bool(drought_effect.get("requires_reuse", false))
+	if requires_reuse and has_reuse_support:
+		return {"efficacy": 1.0, "heat": 1.0, "ecology": 1.0}
+	var effect: Dictionary = drought_effect
+	var efficacy_mult: float = _clamp_multiplier(float(effect.get("efficacy_mult", 1.0)))
+	var heat_mult: float = _clamp_multiplier(float(effect.get("heat_mult", 1.0)))
+	var ecology_mult: float = _clamp_multiplier(float(effect.get("ecology_mult", 1.0)))
+	return {
+		"efficacy": efficacy_mult,
+		"heat": heat_mult,
+		"ecology": ecology_mult
+	}
+
+func _evaluate_failure_curve() -> float:
+	if maint_required <= 0.0:
+		return 1.0
+	if maintenance_debt <= 0.0:
+		return 1.0
+	var ratio: float = clamp(maintenance_debt / max(maint_required, 0.001), 0.0, 1.0)
+	var curve_type: String = String(failure_curve.get("type", FAILURE_CURVE_LINEAR))
+	var k_value: float = max(float(failure_curve.get("k", 0.0)), 0.0)
+	match curve_type:
+		FAILURE_CURVE_EXP:
+			return clamp(exp(-k_value * ratio), 0.0, 1.0)
+		_:
+			return clamp(1.0 - k_value * ratio, 0.0, 1.0)
+
+func _sanitize_failure_curve(curve_variant) -> Dictionary:
+	var curve: Dictionary = _sanitize_dictionary(curve_variant)
+	var curve_type: String = String(curve.get("type", FAILURE_CURVE_LINEAR))
+	if curve_type != FAILURE_CURVE_EXP and curve_type != FAILURE_CURVE_LINEAR:
+		curve_type = FAILURE_CURVE_LINEAR
+	var k_value: float = max(float(curve.get("k", 0.0)), 0.0)
+	return {
+		"type": curve_type,
+		"k": k_value
+	}
+
+func _sanitize_co_benefits(source_variant) -> Dictionary:
+	var source: Dictionary = _sanitize_dictionary(source_variant)
+	return {
+		"heat_delta": float(source.get("heat_delta", 0.0)),
+		"ecology_delta": float(source.get("ecology_delta", 0.0)),
+		"water_quality_delta": float(source.get("water_quality_delta", 0.0))
+	}
+
+func _sanitize_dictionary(value) -> Dictionary:
+	if typeof(value) == TYPE_DICTIONARY:
+		return (value as Dictionary).duplicate(true)
+	return {}
+
+func _sanitize_drought_effect(source_variant) -> Dictionary:
+	var source: Dictionary = _sanitize_dictionary(source_variant)
+	return {
+		"efficacy_mult": float(source.get("efficacy_mult", 1.0)),
+		"heat_mult": float(source.get("heat_mult", 1.0)),
+		"ecology_mult": float(source.get("ecology_mult", 1.0)),
+		"requires_reuse": bool(source.get("requires_reuse", false))
+	}
+
+func _clamp_multiplier(value: float) -> float:
+	return clamp(value, 0.0, 2.0)

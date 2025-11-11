@@ -4,6 +4,29 @@
 		"name":  "Rain Garden",
 		"type":  "green",
 		"cost":  5,
+		"faction":  "green",
+		"capex":  5,
+		"opex_per_year":  0.8,
+		"lifetime_years":  20,
+		"maint_required":  1.0,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.25
+						  },
+		"co_benefits":  {
+							"heat_delta":  2.0,
+							"ecology_delta":  3.0,
+							"water_quality_delta":  2.0
+						},
+		"land_use":  2,
+		"build_time_weeks":  6,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.75,
+							   "heat_mult":  0.9,
+							   "ecology_mult":  0.85
+						   },
 		"resilience":  2,
 		"shape":  [
 					  [
@@ -22,6 +45,29 @@
 		"name":  "Flood Wall",
 		"type":  "grey",
 		"cost":  12,
+		"faction":  "grey",
+		"capex":  12,
+		"opex_per_year":  1.2,
+		"lifetime_years":  40,
+		"maint_required":  1.5,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "exp",
+							  "k":  0.4
+						  },
+		"co_benefits":  {
+							"heat_delta":  -1.0,
+							"ecology_delta":  -1.0,
+							"water_quality_delta":  1.5
+						},
+		"land_use":  3,
+		"build_time_weeks":  10,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  1.0,
+							   "heat_mult":  1.0,
+							   "ecology_mult":  1.0
+						   },
 		"resilience":  5,
 		"shape":  [
 					  [
@@ -41,6 +87,29 @@
 		"name":  "Green Roof",
 		"type":  "green",
 		"cost":  6,
+		"faction":  "green",
+		"capex":  6,
+		"opex_per_year":  0.5,
+		"lifetime_years":  25,
+		"maint_required":  0.5,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.2
+						  },
+		"co_benefits":  {
+							"heat_delta":  3.0,
+							"ecology_delta":  2.0,
+							"water_quality_delta":  1.0
+						},
+		"land_use":  1,
+		"build_time_weeks":  5,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.85,
+							   "heat_mult":  0.85,
+							   "ecology_mult":  0.8
+						   },
 		"resilience":  2,
 		"shape":  [
 					  [
@@ -58,6 +127,29 @@
 		"name":  "Retention Pond",
 		"type":  "green",
 		"cost":  10,
+		"faction":  "green",
+		"capex":  10,
+		"opex_per_year":  0.7,
+		"lifetime_years":  30,
+		"maint_required":  1.2,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.3
+						  },
+		"co_benefits":  {
+							"heat_delta":  1.5,
+							"ecology_delta":  2.5,
+							"water_quality_delta":  3.0
+						},
+		"land_use":  4,
+		"build_time_weeks":  8,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.8,
+							   "heat_mult":  0.9,
+							   "ecology_mult":  0.85
+						   },
 		"resilience":  4,
 		"shape":  [
 					  [
@@ -80,6 +172,29 @@
 		"name":  "Constructed Wetland",
 		"type":  "green",
 		"cost":  9,
+		"faction":  "green",
+		"capex":  9,
+		"opex_per_year":  1.0,
+		"lifetime_years":  35,
+		"maint_required":  1.5,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "exp",
+							  "k":  0.35
+						  },
+		"co_benefits":  {
+							"heat_delta":  3.0,
+							"ecology_delta":  4.0,
+							"water_quality_delta":  3.0
+						},
+		"land_use":  4,
+		"build_time_weeks":  10,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.7,
+							   "heat_mult":  0.85,
+							   "ecology_mult":  0.75
+						   },
 		"resilience":  4,
 		"shape":  [
 					  [
@@ -105,6 +220,29 @@
 		"name":  "Pump Station",
 		"type":  "grey",
 		"cost":  3,
+		"faction":  "grey",
+		"capex":  3,
+		"opex_per_year":  1.3,
+		"lifetime_years":  30,
+		"maint_required":  2.0,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "exp",
+							  "k":  0.45
+						  },
+		"co_benefits":  {
+							"heat_delta":  -1.0,
+							"ecology_delta":  -1.0,
+							"water_quality_delta":  2.0
+						},
+		"land_use":  1,
+		"build_time_weeks":  6,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  1.0,
+							   "heat_mult":  1.0,
+							   "ecology_mult":  1.0
+						   },
 		"resilience":  3,
 		"shape":  [
 					  [
@@ -123,6 +261,29 @@
 		"name":  "Permeable Pavement",
 		"type":  "grey",
 		"cost":  11,
+		"faction":  "hybrid",
+		"capex":  11,
+		"opex_per_year":  0.6,
+		"lifetime_years":  20,
+		"maint_required":  0.8,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.3
+						  },
+		"co_benefits":  {
+							"heat_delta":  2.0,
+							"ecology_delta":  1.5,
+							"water_quality_delta":  2.0
+						},
+		"land_use":  5,
+		"build_time_weeks":  9,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.85,
+							   "heat_mult":  0.9,
+							   "ecology_mult":  0.85
+						   },
 		"resilience":  5,
 		"shape":  [
 					  [
@@ -153,6 +314,30 @@
 		"name":  "Infiltration Trench",
 		"type":  "green",
 		"cost":  8,
+		"faction":  "green",
+		"capex":  8,
+		"opex_per_year":  0.7,
+		"lifetime_years":  25,
+		"maint_required":  1.1,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.3
+						  },
+		"co_benefits":  {
+							"heat_delta":  2.0,
+							"ecology_delta":  2.0,
+							"water_quality_delta":  2.0
+						},
+		"land_use":  4,
+		"build_time_weeks":  8,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.75,
+							   "heat_mult":  0.85,
+							   "ecology_mult":  0.8,
+							   "requires_reuse":  true
+						   },
 		"resilience":  3,
 		"shape":  [
 					  [
@@ -180,6 +365,29 @@
 		"name":  "Bio-swale",
 		"type":  "green",
 		"cost":  7,
+		"faction":  "green",
+		"capex":  7,
+		"opex_per_year":  0.5,
+		"lifetime_years":  20,
+		"maint_required":  0.9,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.25
+						  },
+		"co_benefits":  {
+							"heat_delta":  2.0,
+							"ecology_delta":  1.0,
+							"water_quality_delta":  2.5
+						},
+		"land_use":  4,
+		"build_time_weeks":  7,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.8,
+							   "heat_mult":  0.85,
+							   "ecology_mult":  0.8
+						   },
 		"resilience":  3,
 		"shape":  [
 					  [
@@ -200,6 +408,29 @@
 		"name":  "Stormwater Tree",
 		"type":  "green",
 		"cost":  9,
+		"faction":  "green",
+		"capex":  9,
+		"opex_per_year":  0.3,
+		"lifetime_years":  30,
+		"maint_required":  0.4,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.2
+						  },
+		"co_benefits":  {
+							"heat_delta":  3.0,
+							"ecology_delta":  2.0,
+							"water_quality_delta":  1.0
+						},
+		"land_use":  1,
+		"build_time_weeks":  4,
+		"synergy":  null,
+		"drought_effect":  {
+							   "efficacy_mult":  0.7,
+							   "heat_mult":  0.8,
+							   "ecology_mult":  0.75
+						   },
 		"resilience":  4,
 		"shape":  [
 					  [
@@ -210,6 +441,223 @@
 		"unlock_round":  6,
 		"type_tags":  [
 						  "green"
+					  ]
+	},
+	{
+		"id":  "seawall",
+		"name":  "Seawall",
+		"type":  "grey",
+		"cost":  14,
+		"faction":  "grey",
+		"capex":  14,
+		"opex_per_year":  1.5,
+		"lifetime_years":  45,
+		"maint_required":  1.8,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "exp",
+							  "k":  0.35
+						  },
+		"co_benefits":  {
+							"heat_delta":  -2.0,
+							"ecology_delta":  -1.5,
+							"water_quality_delta":  1.0
+						},
+		"land_use":  4,
+		"build_time_weeks":  12,
+		"synergy":  {
+						"adjacency_tags":  [
+							"blue"
+						],
+						"bonus":  0.5
+					},
+		"drought_effect":  {
+							   "efficacy_mult":  1.0,
+							   "heat_mult":  1.0,
+							   "ecology_mult":  1.0
+						   },
+		"resilience":  6,
+		"shape":  [
+					  [
+						  true,
+						  true,
+						  true,
+						  true
+					  ]
+				  ],
+		"description":  "Reinforced shoreline barrier that protects entire rows from surge and tidal damage.",
+		"special_rule":  "Must be placed along coastal or water-adjacent tiles for maximum effect.",
+		"unlock_round":  7,
+		"type_tags":  [
+						  "grey",
+						  "blue"
+					  ]
+	},
+	{
+		"id":  "street_canopy_network",
+		"name":  "Street Canopy Network",
+		"type":  "green",
+		"cost":  11,
+		"faction":  "green",
+		"capex":  11,
+		"opex_per_year":  0.6,
+		"lifetime_years":  35,
+		"maint_required":  1.3,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.3
+						  },
+		"co_benefits":  {
+							"heat_delta":  4.0,
+							"ecology_delta":  3.0,
+							"water_quality_delta":  1.0
+						},
+		"land_use":  5,
+		"build_time_weeks":  10,
+		"synergy":  {
+						"adjacency_tags":  [
+							"green"
+						],
+						"bonus":  0.6
+					},
+		"drought_effect":  {
+							   "efficacy_mult":  0.8,
+							   "heat_mult":  0.75,
+							   "ecology_mult":  0.7
+						   },
+		"resilience":  3,
+		"shape":  [
+					  [
+						  true,
+						  false,
+						  true
+					  ],
+					  [
+						  true,
+						  true,
+						  true
+					  ]
+				  ],
+		"description":  "Linked rows of mature street trees that shade corridors and intercept rainfall.",
+		"unlock_round":  7,
+		"type_tags":  [
+						  "green"
+					  ]
+	},
+	{
+		"id":  "storage_tunnel",
+		"name":  "Storage Tunnel",
+		"type":  "grey",
+		"cost":  13,
+		"faction":  "hybrid",
+		"capex":  13,
+		"opex_per_year":  0.9,
+		"lifetime_years":  40,
+		"maint_required":  1.4,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "exp",
+							  "k":  0.3
+						  },
+		"co_benefits":  {
+							"heat_delta":  1.0,
+							"ecology_delta":  1.0,
+							"water_quality_delta":  3.0
+						},
+		"land_use":  3,
+		"build_time_weeks":  14,
+		"synergy":  {
+						"adjacency_tags":  [
+							"blue",
+							"grey"
+						],
+						"bonus":  0.7
+					},
+		"drought_effect":  {
+							   "efficacy_mult":  0.95,
+							   "heat_mult":  1.0,
+							   "ecology_mult":  1.0,
+							   "requires_reuse":  true
+						   },
+		"resilience":  4,
+		"shape":  [
+					  [
+						  true,
+						  true,
+						  true
+					  ],
+					  [
+						  true,
+						  false,
+						  true
+					  ]
+				  ],
+		"description":  "Deep conveyance tunnel that stores combined surges and can recharge reuse networks when connected.",
+		"unlock_round":  8,
+		"type_tags":  [
+						  "grey",
+						  "blue"
+					  ]
+	},
+	{
+		"id":  "channel_naturalization",
+		"name":  "Channel Naturalization",
+		"type":  "green",
+		"cost":  12,
+		"faction":  "hybrid",
+		"capex":  12,
+		"opex_per_year":  0.7,
+		"lifetime_years":  30,
+		"maint_required":  1.0,
+		"maint_fulfilled":  0.0,
+		"failure_curve":  {
+							  "type":  "linear",
+							  "k":  0.25
+						  },
+		"co_benefits":  {
+							"heat_delta":  3.0,
+							"ecology_delta":  4.0,
+							"water_quality_delta":  2.0
+						},
+		"land_use":  4,
+		"build_time_weeks":  11,
+		"synergy":  {
+						"adjacency_tags":  [
+							"green",
+							"blue"
+						],
+						"bonus":  0.5
+					},
+		"drought_effect":  {
+							   "efficacy_mult":  0.8,
+							   "heat_mult":  0.85,
+							   "ecology_mult":  0.8,
+							   "requires_reuse":  false
+						   },
+		"resilience":  3,
+		"shape":  [
+					  [
+						  false,
+						  true,
+						  false
+					  ],
+					  [
+						  true,
+						  true,
+						  true
+					  ],
+					  [
+						  false,
+						  true,
+						  false
+					  ]
+				  ],
+		"description":  "Re-meanders concrete channels with vegetated benches that slow flows while boosting corridors.",
+		"unlock_round":  7,
+		"type_tags":  [
+						  "green",
+						  "blue"
 					  ]
 	}
 ]

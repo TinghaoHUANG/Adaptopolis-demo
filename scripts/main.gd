@@ -294,6 +294,7 @@ func start_new_game() -> void:
 		shop_manager.reset_locked_slots()
 	_reset_round_refresh_counter()
 	grid_manager.clear()
+	_refresh_environment_channels()
 	if round_summary_animator:
 		round_summary_animator.reset()
 		round_animation_active = false
@@ -322,7 +323,9 @@ func start_new_game() -> void:
 			tutorial_overlay.call_deferred("start", steps)
 
 func simulate_round() -> Dictionary:
-	var report: Dictionary = rain_system.simulate_round(city_state)
+	var report: Dictionary = rain_system.simulate_round(city_state, grid_manager)
+	var drought_active: bool = bool(report.get("extreme_drought", false))
+	city_state.set_drought_state(drought_active)
 	var card_effects := _apply_card_post_rain(report)
 	var damage_after := int(card_effects.get("damage_after", report.get("damage", 0)))
 	report["damage"] = damage_after
@@ -337,6 +340,11 @@ func simulate_round() -> Dictionary:
 	if bonus_income > 0:
 		city_state.add_money(bonus_income)
 	report["card_bonus"] = bonus_income
+	# Maintenance settlement occurs after income and bonuses.
+	var maintenance_report := city_state.settle_maintenance_cycle()
+	report["maintenance"] = maintenance_report
+	_refresh_environment_channels()
+	report["environment_channels"] = city_state.get_environment_channels()
 	# Optional healing: only on zero-damage rounds to prevent net-heal when damaged.
 	var heal_potential := int(card_effects.get("health_restore", 0))
 	if damage_after == 0 and heal_potential > 0:
@@ -351,6 +359,19 @@ func simulate_round() -> Dictionary:
 	city_state.advance_round()
 	_reset_round_refresh_counter()
 	return report
+
+func _refresh_environment_channels() -> void:
+	if city_state == null or grid_manager == null:
+		return
+	var drought_active: bool = city_state.is_drought_active()
+	var channels: Dictionary = grid_manager.calculate_environment_channels(drought_active)
+	var heat_value: float = float(channels.get("heat", 0.0))
+	var ecology_value: float = float(channels.get("ecology", 0.0))
+	var contributions_variant: Variant = channels.get("per_facility", {})
+	var contributions: Dictionary = {}
+	if typeof(contributions_variant) == TYPE_DICTIONARY:
+		contributions = contributions_variant
+	city_state.set_environment_channels(heat_value, ecology_value, contributions)
 
 func _prepare_facility_for_purchase(facility: Facility) -> Dictionary:
 	var info := {
@@ -429,6 +450,8 @@ func load_game() -> bool:
 		if grid_display:
 			_grid_display_call("refresh_all")
 		_apply_card_state(save_manager.get_last_card_state())
+		city_state.set_drought_state(false)
+		_refresh_environment_channels()
 		var forecast_range := _update_forecast()
 		if ui_manager:
 			ui_manager.show_rain_report({})
@@ -440,6 +463,7 @@ func load_game() -> bool:
 func _on_facility_placed(_facility, _origin: Vector2i) -> void:
 	if grid_display:
 		_grid_display_call("refresh_all")
+	_refresh_environment_channels()
 	_evaluate_card_unlocks()
 
 func _on_facility_purchased(facility) -> void:
@@ -447,6 +471,7 @@ func _on_facility_purchased(facility) -> void:
 	_clear_selection_preview()
 	if grid_display:
 		_grid_display_call("refresh_all")
+	_refresh_environment_channels()
 	if shop_display:
 		_shop_display_call("clear_selection")
 	_shop_display_call("clear_warning", [])
@@ -582,7 +607,7 @@ func _schedule_facility_info(facility: Facility) -> void:
 		hover_info_timer.start(hover_info_delay)
 
 func _on_hover_info_timeout() -> void:
-	var facility := pending_hover_facility
+	var facility: Facility = pending_hover_facility
 	pending_hover_facility = null
 	if facility == null:
 		return
@@ -606,7 +631,7 @@ func _on_grid_cell_clicked(position: Vector2i) -> void:
 				_shop_display_call("clear_selection")
 			_shop_display_call("clear_warning", [])
 			return
-	var existing := grid_manager.get_facility_at(position) if grid_manager else null
+	var existing: Facility = grid_manager.get_facility_at(position) if grid_manager else null
 	if existing:
 		_begin_facility_drag(existing)
 		return
@@ -617,7 +642,7 @@ func _on_grid_cell_hovered(position: Vector2i) -> void:
 		return
 	if grid_manager == null:
 		return
-	var facility := grid_manager.get_facility_at(position)
+	var facility: Facility = grid_manager.get_facility_at(position)
 	_schedule_facility_info(facility)
 
 func _on_grid_cell_hover_exited(_position: Vector2i) -> void:
@@ -694,7 +719,7 @@ func _position_facility_info(facility: Facility) -> void:
 		return
 	if grid_manager == null or grid_display == null:
 		return
-	var cells := grid_manager.get_facility_cells(facility)
+	var cells: Array[Vector2i] = grid_manager.get_facility_cells(facility)
 	if cells.is_empty():
 		cells.append(grid_manager.get_facility_origin(facility))
 	var center := Vector2.ZERO
@@ -724,8 +749,8 @@ func _on_facility_sell_pressed() -> void:
 		return
 	if hovered_facility == null:
 		return
-	var facility := hovered_facility
-	var sell_price := hovered_sell_price
+	var facility: Facility = hovered_facility
+	var sell_price: int = hovered_sell_price
 	if sell_price <= 0:
 		return
 	if grid_manager:
@@ -740,11 +765,13 @@ func _on_facility_sell_pressed() -> void:
 func _on_grid_facility_removed(facility: Facility) -> void:
 	if facility == hovered_facility:
 		_hide_facility_info()
+	_refresh_environment_channels()
 	_evaluate_card_unlocks()
 
 func _on_grid_facility_moved(facility: Facility, _new_origin: Vector2i, _previous_origin: Vector2i) -> void:
 	if facility == hovered_facility:
 		_position_facility_info(facility)
+	_refresh_environment_channels()
 	_evaluate_card_unlocks()
 
 func _on_grid_facility_merged(facility: Facility, absorbed: Facility) -> void:
@@ -752,6 +779,7 @@ func _on_grid_facility_merged(facility: Facility, absorbed: Facility) -> void:
 		_hide_facility_info()
 	elif hovered_facility == facility:
 		_position_facility_info(facility)
+	_refresh_environment_channels()
 	_evaluate_card_unlocks()
 
 func _input(event: InputEvent) -> void:
@@ -831,6 +859,8 @@ func _on_next_round_pressed() -> void:
 	var health_gain := int(report.get("card_health_restore", 0))
 	if health_gain > 0:
 		message += " Cards restored ❤️%d." % health_gain
+	if report.get("extreme_drought", false):
+		message = "⚠️ Extreme Drought! " + message
 	_refresh_shop_for_new_round()
 	message += " Shop refreshed for the next round."
 	_show_status(message)
@@ -1113,13 +1143,13 @@ func _attempt_drag_drop(position: Vector2i) -> void:
 		return
 	if grid_manager == null:
 		return
-	var facility := dragged_facility
+	var facility: Facility = dragged_facility
 	if not grid_manager.can_place_facility(facility, position):
 		_show_status("That location is blocked. Choose another tile or click the original spot to cancel.")
 		if grid_display:
 			_grid_display_call("set_preview_facility", [facility])
 		return
-	var placed := grid_manager.place_facility(facility, position)
+	var placed: bool = grid_manager.place_facility(facility, position)
 	if not placed:
 		_show_status("Unable to move %s there. Try a different tile." % facility.name)
 		if grid_display:
@@ -1137,12 +1167,12 @@ func _attempt_drag_drop(position: Vector2i) -> void:
 func _cancel_dragged_facility(restore: bool = true, message: String = "") -> void:
 	if not _is_dragging():
 		return
-	var facility := dragged_facility
-	var origin := dragged_original_origin
+	var facility: Facility = dragged_facility
+	var origin: Vector2i = dragged_original_origin
 	dragged_facility = null
 	dragged_original_origin = Vector2i.ZERO
 	if restore and grid_manager and facility:
-		var restored := grid_manager.can_place_facility(facility, origin) and grid_manager.place_facility(facility, origin)
+		var restored: bool = grid_manager.can_place_facility(facility, origin) and grid_manager.place_facility(facility, origin)
 		if not restored:
 			push_warning("Failed to restore facility %s to origin %s" % [facility.name, origin])
 	if grid_display:
@@ -1758,7 +1788,7 @@ func _has_adjacent_green_pair() -> bool:
 			continue
 		if _facility_has_tag(cast_facility, "green"):
 			greens.append(cast_facility)
-	var total := greens.size()
+	var total: int = greens.size()
 	for i in range(total):
 		for j in range(i + 1, total):
 			if _facilities_adjacent(greens[i], greens[j]):
@@ -1766,8 +1796,8 @@ func _has_adjacent_green_pair() -> bool:
 	return false
 
 func _facilities_adjacent_by_ids(id_a: String, id_b: String) -> bool:
-	var list_a := _get_facilities_by_id(id_a)
-	var list_b := _get_facilities_by_id(id_b)
+	var list_a: Array[Facility] = _get_facilities_by_id(id_a)
+	var list_b: Array[Facility] = _get_facilities_by_id(id_b)
 	if list_a.is_empty() or list_b.is_empty():
 		return false
 	for facility_a in list_a:
@@ -1781,10 +1811,10 @@ func _facilities_adjacent_by_ids(id_a: String, id_b: String) -> bool:
 func _facilities_adjacent(a: Facility, b: Facility) -> bool:
 	if grid_manager == null or a == null or b == null:
 		return false
-	var cells := grid_manager.get_facility_cells(a)
+	var cells: Array[Vector2i] = grid_manager.get_facility_cells(a)
 	for cell in cells:
 		for dir in CARD_ADJACENT_DIRECTIONS:
-			var neighbor := grid_manager.get_facility_at(cell + dir)
+			var neighbor: Facility = grid_manager.get_facility_at(cell + dir)
 			if neighbor == b:
 				return true
 	return false

@@ -19,6 +19,7 @@ signal offer_lock_toggled(index: int, locked: bool)
 @export var warning_label_path: NodePath
 @export var skip_button_path: NodePath
 @export var refresh_button_path: NodePath
+@export var filter_container_path: NodePath
 
 var offers: Array = []
 var offer_locks: Array[bool] = []
@@ -28,10 +29,13 @@ var button_group: ButtonGroup = ButtonGroup.new()
 var selected_index: int = -1
 var offers_container: VBoxContainer = null
 var title_label: Label = null
-var detail_label: Label = null
+var detail_label: RichTextLabel = null
 var warning_label: Label = null
 var skip_button: Button = null
 var refresh_button: Button = null
+var filter_container: HBoxContainer = null
+var faction_filter_buttons: Dictionary = {}
+var faction_filter: String = "all"
 
 const LEVEL2_HIGHLIGHT: Color = Color(0.64, 0.45, 0.93, 1.0)
 const LEVEL3_HIGHLIGHT: Color = Color(0.96, 0.80, 0.30, 1.0)
@@ -47,6 +51,38 @@ const DETAIL_FONT_SIZE: int = 28
 const SHAPE_PREVIEW_CLASS := preload("res://scripts/shop_shape_preview.gd")
 const FUNDS_LABEL_TEXT: String = "🪙 Funds"
 const REFRESH_FREE_TEXT := "Free"
+const FACTION_STYLES := {
+	"all": {
+		"label": "All",
+		"short": "ALL",
+		"color": Color(0.62, 0.66, 0.78)
+	},
+	"green": {
+		"label": "Green",
+		"short": "GRN",
+		"color": Color(0.32, 0.62, 0.38)
+	},
+	"grey": {
+		"label": "Grey",
+		"short": "GRY",
+		"color": Color(0.55, 0.58, 0.66)
+	},
+	"hybrid": {
+		"label": "Hybrid",
+		"short": "HYB",
+		"color": Color(0.74, 0.54, 0.33)
+	},
+	"blue": {
+		"label": "Blue",
+		"short": "BLU",
+		"color": Color(0.33, 0.55, 0.82)
+	},
+	"default": {
+		"label": "Unassigned",
+		"short": "NA",
+		"color": Color(0.46, 0.46, 0.46)
+	}
+}
 
 var _base_title_text: String = ""
 var _current_funds_value: Variant = null
@@ -56,10 +92,11 @@ func _ready() -> void:
 	button_group.allow_unpress = true
 	title_label = get_node_or_null(title_label_path) as Label
 	offers_container = get_node_or_null(offers_container_path) as VBoxContainer
-	detail_label = get_node_or_null(detail_label_path) as Label
+	detail_label = get_node_or_null(detail_label_path) as RichTextLabel
 	warning_label = get_node_or_null(warning_label_path) as Label
 	skip_button = get_node_or_null(skip_button_path) as Button
 	refresh_button = get_node_or_null(refresh_button_path) as Button
+	filter_container = get_node_or_null(filter_container_path) as HBoxContainer
 	if skip_button:
 		skip_button.text = tr("SKIP_TURN")
 		skip_button.connect("pressed", Callable(self, "_on_skip_pressed"))
@@ -73,9 +110,12 @@ func _ready() -> void:
 		warning_label.visible = false
 		warning_label.text = ""
 		warning_label.add_theme_color_override("font_color", Color(1.0, 0.34, 0.34))
+	if detail_label:
+		detail_label.bbcode_enabled = true
 	if title_label:
 		_base_title_text = title_label.text
 		_refresh_title()
+	_build_faction_filters()
 	_update_status_hint()
 
 func set_offers(new_offers: Array, locked_states: Array = []) -> void:
@@ -91,8 +131,7 @@ func set_offers(new_offers: Array, locked_states: Array = []) -> void:
 	_update_status_hint()
 
 func set_status(text: String) -> void:
-	if detail_label:
-		detail_label.text = text
+	_set_detail_text(text, false)
 
 func set_warning(text: String) -> void:
 	if warning_label == null:
@@ -137,6 +176,7 @@ func _rebuild_offer_list() -> void:
 		offers_container.add_child(button)
 		buttons.append(button)
 	_sync_lock_buttons()
+	_apply_filter_to_buttons()
 
 func _create_offer_button(index: int, facility: Facility) -> Button:
 	var button := Button.new()
@@ -164,6 +204,14 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	text_column.add_theme_constant_override("separation", 6)
 	content.add_child(text_column)
 
+	var header_row := HBoxContainer.new()
+	header_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header_row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	header_row.add_theme_constant_override("separation", 8)
+	text_column.add_child(header_row)
+
 	var name_label := Label.new()
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -172,7 +220,10 @@ func _create_offer_button(index: int, facility: Facility) -> Button:
 	if OFFER_TITLE_FONT:
 		name_label.add_theme_font_override("font", OFFER_TITLE_FONT)
 		name_label.add_theme_font_size_override("font_size", OFFER_TITLE_FONT_SIZE)
-	text_column.add_child(name_label)
+	header_row.add_child(name_label)
+
+	var badge := _create_faction_badge(facility.faction)
+	header_row.add_child(badge)
 
 	var stats_row := HBoxContainer.new()
 	stats_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -296,10 +347,27 @@ func _format_offer_stats(facility: Facility) -> String:
 	return "💰 %d    🛡️ %d" % [facility.cost, facility.resilience]
 
 func _build_detail_text(facility: Facility) -> String:
+	var style := _get_faction_style(facility.faction)
+	var capex := _format_money(facility.capex if facility.capex != 0 else facility.cost)
+	var opex := _format_money(facility.opex_per_year)
+	var maintenance := _format_money(facility.maint_required)
+	var lifetime := facility.lifetime_years
+	var build_time := facility.build_time_weeks
+	var land_use := facility.land_use
+	var benefits := _format_co_benefits(facility)
 	var description := facility.description.strip_edges()
 	if description.is_empty():
-		return "No description available yet."
-	return description
+		description = "No description available yet."
+	var lines: Array[String] = []
+	lines.append("[b]%s[/b]" % _escape_bbcode(facility.name))
+	lines.append("[color=%s]%s[/color]" % [style.color.to_html(false), style.label])
+	lines.append("CapEx %s    OpEx/yr %s    Lifetime %dy" % [capex, opex, lifetime])
+	lines.append("Maintenance %s / yr    Build %dw    Land %s tiles" % [maintenance, build_time, _format_land(land_use)])
+	if not benefits.is_empty():
+		lines.append("Co-benefits %s" % benefits)
+	lines.append("")
+	lines.append(_escape_bbcode(description))
+	return "\n".join(lines)
 
 func _format_money(value) -> String:
 	var numeric := float(value)
@@ -319,7 +387,7 @@ func _on_offer_toggled(pressed: bool, index: int) -> void:
 	clear_warning()
 	emit_signal("offer_selected", index)
 	var facility: Facility = offers[index]
-	set_status(_build_detail_text(facility))
+	_set_detail_text(_build_detail_text(facility), true)
 	if skip_button:
 		skip_button.disabled = false
 
@@ -340,7 +408,7 @@ func _update_status_hint() -> void:
 		skip_button.disabled = selected_index < 0
 	if selected_index >= 0 and selected_index < offers.size():
 		var facility: Facility = offers[selected_index]
-		set_status(_build_detail_text(facility))
+		_set_detail_text(_build_detail_text(facility), true)
 	else:
 		set_status("Select a facility, then click the grid to place it.")
 
@@ -372,3 +440,131 @@ func _update_lock_button_visual(index: int) -> void:
 func _sync_lock_buttons() -> void:
 	for i in range(lock_buttons.size()):
 		_update_lock_button_visual(i)
+
+func _build_faction_filters() -> void:
+	if filter_container == null:
+		return
+	for child in filter_container.get_children():
+		child.queue_free()
+	faction_filter_buttons.clear()
+	var order := ["all", "green", "grey", "hybrid"]
+	for faction in order:
+		var style := _get_faction_style(faction)
+		var button := Button.new()
+		button.toggle_mode = true
+		button.focus_mode = Control.FOCUS_NONE
+		button.text = style.short
+		button.tooltip_text = "Show %s facilities." % style.label
+		button.button_pressed = faction == faction_filter
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var theme := StyleBoxFlat.new()
+		theme.bg_color = style.color.darkened(0.2)
+		theme.set_corner_radius_all(6)
+		button.add_theme_stylebox_override("normal", theme)
+		var hover := theme.duplicate()
+		hover.bg_color = style.color
+		button.add_theme_stylebox_override("hover", hover)
+		button.add_theme_stylebox_override("pressed", hover)
+		button.add_theme_color_override("font_color", Color.WHITE)
+		button.connect("pressed", Callable(self, "_on_faction_filter_pressed").bind(faction))
+		filter_container.add_child(button)
+		faction_filter_buttons[faction] = button
+
+func _on_faction_filter_pressed(faction: String) -> void:
+	if faction_filter == faction:
+		return
+	faction_filter = faction
+	for key in faction_filter_buttons.keys():
+		var btn: Button = faction_filter_buttons[key]
+		if is_instance_valid(btn):
+			btn.set_block_signals(true)
+			btn.button_pressed = key == faction_filter
+			btn.set_block_signals(false)
+	_apply_filter_to_buttons()
+
+func _apply_filter_to_buttons() -> void:
+	var selection_cleared := false
+	for i in range(buttons.size()):
+		if i >= offers.size():
+			continue
+		var facility: Facility = offers[i]
+		var visible := _passes_faction_filter(facility)
+		var button := buttons[i]
+		if not is_instance_valid(button):
+			continue
+		button.visible = visible
+		button.disabled = not visible
+		if not visible and button.button_pressed:
+			button.button_pressed = false
+			if selected_index == i:
+				selected_index = -1
+				selection_cleared = true
+	if selection_cleared:
+		emit_signal("offer_selected", -1)
+		_update_status_hint()
+
+func _passes_faction_filter(facility: Facility) -> bool:
+	if facility == null:
+		return true
+	if faction_filter == "all":
+		return true
+	return facility.faction.strip_edges().to_lower() == faction_filter
+
+func _create_faction_badge(faction: String) -> Control:
+	var style := _get_faction_style(faction)
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.custom_minimum_size = Vector2(64, 24)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var box := StyleBoxFlat.new()
+	box.bg_color = style.color
+	box.set_corner_radius_all(6)
+	box.border_color = style.color.darkened(0.25)
+	box.set_border_width_all(1)
+	panel.add_theme_stylebox_override("panel", box)
+	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	label.text = style.short
+	label.add_theme_color_override("font_color", Color.WHITE)
+	panel.add_child(label)
+	return panel
+
+func _get_faction_style(faction: String) -> Dictionary:
+	var normalized := faction.strip_edges().to_lower()
+	if normalized.is_empty():
+		return FACTION_STYLES["default"]
+	return FACTION_STYLES.get(normalized, FACTION_STYLES["default"])
+
+func _format_co_benefits(facility: Facility) -> String:
+	if facility.co_benefits.is_empty():
+		return ""
+	var heat := float(facility.co_benefits.get("heat_delta", 0.0))
+	var ecology := float(facility.co_benefits.get("ecology_delta", 0.0))
+	var water := float(facility.co_benefits.get("water_quality_delta", 0.0))
+	return "☀ %s    🌿 %s    💧 %s" % [_format_signed(heat), _format_signed(ecology), _format_signed(water)]
+
+func _format_land(value: float) -> String:
+	if is_equal_approx(value, floor(value)):
+		return str(int(value))
+	return "%0.1f" % value
+
+func _format_signed(value: float) -> String:
+	if abs(value) < 0.05:
+		return "0"
+	return "%+0.1f" % value
+
+func _set_detail_text(text: String, rich: bool) -> void:
+	if detail_label == null:
+		return
+	if rich:
+		detail_label.bbcode_text = text
+	else:
+		detail_label.bbcode_text = _escape_bbcode(text)
+
+func _escape_bbcode(text: String) -> String:
+	return text.replace("[", "[lb]").replace("]", "[rb]")

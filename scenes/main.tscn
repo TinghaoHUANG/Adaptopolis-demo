@@ -329,6 +329,7 @@ detail_label_path = NodePath("MarginContainer/VBox/DetailLabel")
 warning_label_path = NodePath("MarginContainer/VBox/WarningLabel")
 skip_button_path = NodePath("MarginContainer/VBox/Controls/SkipButton")
 refresh_button_path = NodePath("MarginContainer/VBox/Controls/RefreshButton")
+filter_container_path = NodePath("MarginContainer/VBox/FactionFilters")
 
 [node name="MarginContainer" type="MarginContainer" parent="UI/ShopPanel"]
 layout_mode = 2
@@ -343,16 +344,22 @@ layout_mode = 2
 text = "🛒 Shop"
 autowrap_mode = 2
 
+[node name="FactionFilters" type="HBoxContainer" parent="UI/ShopPanel/MarginContainer/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
 [node name="OfferList" type="VBoxContainer" parent="UI/ShopPanel/MarginContainer/VBox"]
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="DetailLabel" type="Label" parent="UI/ShopPanel/MarginContainer/VBox"]
+[node name="DetailLabel" type="RichTextLabel" parent="UI/ShopPanel/MarginContainer/VBox"]
 custom_minimum_size = Vector2(400, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 3
+bbcode_enabled = true
 text = "Select a facility, then click the grid to place it."
 autowrap_mode = 2
 

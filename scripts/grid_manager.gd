@@ -16,6 +16,13 @@ signal facility_moved(facility: Facility, new_origin: Vector2i, previous_origin:
 
 const GRID_WIDTH := 6
 const GRID_HEIGHT := 6
+const REUSE_SUPPORT_TAGS := ["reuse", "blue"]
+const REUSE_PROVIDER_IDS := [
+	"water_reuse_hub",
+	"recycled_water_main",
+	"storage_tunnel",
+	"greywater_loop"
+]
 
 class GridCell:
 	var position: Vector2i
@@ -312,6 +319,17 @@ func _get_neighbor_facilities(facility: Facility) -> Array[Facility]:
 				seen[neighbor_facility] = true
 	return neighbors
 
+func has_reuse_support(facility: Facility) -> bool:
+	if facility == null:
+		return false
+	if _facility_supports_reuse(facility):
+		return true
+	var neighbors: Array[Facility] = _get_neighbor_facilities(facility)
+	for neighbor in neighbors:
+		if _facility_supports_reuse(neighbor):
+			return true
+	return false
+
 func serialize_state() -> Array:
 	var snapshot: Array[Dictionary] = []
 	for facility in facility_cells.keys():
@@ -319,12 +337,16 @@ func serialize_state() -> Array:
 		var cells: Array = []
 		for pos in facility_cells[facility]:
 			cells.append([pos.x, pos.y])
-		snapshot.append({
+		var entry: Dictionary = {
 			"id": facility.id,
 			"level": facility.level,
 			"origin": [origin.x, origin.y],
 			"cells": cells
-		})
+		}
+		var runtime_state: Dictionary = facility.get_runtime_snapshot()
+		if not runtime_state.is_empty():
+			entry["runtime"] = runtime_state
+		snapshot.append(entry)
 	return snapshot
 
 func load_state(data: Array, library: FacilityLibrary, building_positions: Array = [], water_positions_override: Array = []) -> void:
@@ -350,6 +372,7 @@ func load_state(data: Array, library: FacilityLibrary, building_positions: Array
 			continue
 		var target_level: int = entry.get("level", 1)
 		facility.upgrade_to_level(target_level)
+		facility.apply_runtime_snapshot(entry.get("runtime", {}))
 		var origin_array: Array = entry.get("origin", [0, 0])
 		var origin: Vector2i = Vector2i(origin_array[0], origin_array[1])
 		place_facility(facility, origin)
@@ -393,3 +416,97 @@ func get_water_positions() -> Array[Vector2i]:
 			if cell.is_water:
 				result.append(cell.position)
 	return result
+
+func calculate_environment_channels(drought_active: bool = false) -> Dictionary:
+	var totals := {
+		"heat": 0.0,
+		"ecology": 0.0,
+		"per_facility": {}
+	}
+	var contributions_variant = totals["per_facility"]
+	var contributions: Dictionary = contributions_variant
+	if facility_cells.is_empty():
+		return totals
+	for facility in facility_cells.keys():
+		if facility == null:
+			continue
+		var multiplier: float = facility.get_maintenance_multiplier()
+		var benefits: Dictionary = facility.co_benefits
+		var base_heat: float = 0.0
+		var base_ecology: float = 0.0
+		if not benefits.is_empty():
+			base_heat = float(benefits.get("heat_delta", 0.0))
+			base_ecology = float(benefits.get("ecology_delta", 0.0))
+		var adjusted_heat: float = base_heat * multiplier
+		var adjusted_ecology: float = base_ecology * multiplier
+		var synergy_bonus: float = _calculate_synergy_bonus(facility)
+		var reuse_supported: bool = has_reuse_support(facility)
+		var drought_multipliers: Dictionary = facility.get_drought_multipliers(drought_active, reuse_supported)
+		var heat_mult: float = float(drought_multipliers.get("heat", 1.0))
+		var ecology_mult: float = float(drought_multipliers.get("ecology", 1.0))
+		var total_heat: float = (adjusted_heat + synergy_bonus) * heat_mult
+		var total_ecology: float = (adjusted_ecology + synergy_bonus) * ecology_mult
+		totals["heat"] += total_heat
+		totals["ecology"] += total_ecology
+		var origin: Vector2i = facility_origins.get(facility, Vector2i.ZERO)
+		var facility_key: String = "%s@%d" % [facility.id, facility.get_instance_id()]
+		contributions[facility_key] = {
+			"id": facility.id,
+			"name": facility.name,
+			"heat": total_heat,
+			"ecology": total_ecology,
+			"base_heat": adjusted_heat,
+			"base_ecology": adjusted_ecology,
+			"synergy_bonus": synergy_bonus,
+			"drought_heat_mult": heat_mult,
+			"drought_ecology_mult": ecology_mult,
+			"reuse_supported": reuse_supported,
+			"origin": [origin.x, origin.y]
+		}
+	return totals
+
+func _calculate_synergy_bonus(facility: Facility) -> float:
+	var config: Dictionary = facility.synergy
+	if config.is_empty():
+		return 0.0
+	var bonus: float = float(config.get("bonus", 0.0))
+	if bonus == 0.0:
+		return 0.0
+	var tags_variant = config.get("adjacency_tags", [])
+	if typeof(tags_variant) != TYPE_ARRAY:
+		return 0.0
+	var adjacency_tags: Array[String] = []
+	for entry in tags_variant:
+		if typeof(entry) != TYPE_STRING:
+			continue
+		var tag: String = entry
+		if not adjacency_tags.has(tag):
+			adjacency_tags.append(tag)
+	if adjacency_tags.is_empty():
+		return 0.0
+	var neighbors: Array[Facility] = _get_neighbor_facilities(facility)
+	if neighbors.is_empty():
+		return 0.0
+	var matches: int = 0
+	for neighbor in neighbors:
+		if neighbor == null:
+			continue
+		var neighbor_tags: Array[String] = neighbor.get_type_tags()
+		for tag in neighbor_tags:
+			if adjacency_tags.has(tag):
+				matches += 1
+				break
+	if matches <= 0:
+		return 0.0
+	return bonus * float(matches)
+
+func _facility_supports_reuse(facility: Facility) -> bool:
+	if facility == null:
+		return false
+	if REUSE_PROVIDER_IDS.has(facility.id):
+		return true
+	var tags: Array[String] = facility.get_type_tags()
+	for tag in tags:
+		if REUSE_SUPPORT_TAGS.has(tag):
+			return true
+	return false
